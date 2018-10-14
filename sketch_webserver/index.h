@@ -90,7 +90,7 @@ function motorTurnRight() {
 setInterval(function() {
   // Call a function repetatively with 2 Second interval
   getData();
-}, 200); //2000mSeconds update rate
+}, 2000); //2000mSeconds update rate
 
 function getData() {
   var xhttp = new XMLHttpRequest();

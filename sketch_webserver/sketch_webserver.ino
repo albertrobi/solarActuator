@@ -61,16 +61,19 @@ const int readFeedBackD6 = D6;
   
   void handleMotorStart() {
      digitalWrite ( motor, HIGH );
+     Serial.print("Motor Start");
      server.send(200, "text/html", "Started");
   }
   
   void handleMotorStop() {
      digitalWrite ( motor, LOW );
+      Serial.print("Motor Stop");
      server.send(200, "text/html", "Stoped");
   }
   
   void handleMotorTurnLeft() {
     turnRight = 0;
+    Serial.print("Motor Left");
     digitalWrite ( motorDirection, LOW );
     server.send(200, "text/html", "LEFT");
   }
@@ -78,6 +81,7 @@ const int readFeedBackD6 = D6;
   void handleMotorTurnRight() {
     turnRight = 1;
     digitalWrite ( motorDirection, HIGH );
+    Serial.print("Motor Right");
     server.send(200, "text/html", "Right");
   }
 
@@ -85,21 +89,21 @@ const int readFeedBackD6 = D6;
   //-----accumulate counts from flow sensor one, on pin2, interupt 0
   void flowOneInterupt()
     {
-     if(feedBackCount > 1000) feedBackCount = 0;
      if (turnRight == 1) {
       feedBackCount--;
      } else {
       feedBackCount++;
      }
-     Serial.print("flow counts:  "); Serial.println(feedBackCount); 
+     Serial.print("FeedBack counts:  "); Serial.println(feedBackCount); 
    }
 
 
 String webPage = "";
 
 void setup(void){
-  
-  attachInterrupt(digitalPinToInterrupt(D6),flowOneInterupt,RISING);
+
+  pinMode(readFeedBackD6, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(readFeedBackD6),flowOneInterupt,RISING);
 
   pinMode ( motorDirection, OUTPUT );
   pinMode ( motor, OUTPUT );
