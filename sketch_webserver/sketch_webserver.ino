@@ -2,8 +2,8 @@
 #include <WiFiClient.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
-//#include <WiFiUdp.h>
-//#include <ArduinoOTA.h>
+#include <WiFiUdp.h>
+#include <ArduinoOTA.h>
 
 #include "index.h" //Our HTML webpage contents with javascripts
 
@@ -26,8 +26,8 @@ void handleRoot() {
 }
 
 // variables for wifi update
-//bool ota_flag = true;
-//uint16_t time_elapsed = 0;
+bool ota_flag = true;
+uint16_t time_elapsed = 0;
  
 // Motor variables
 int turnRight = 0;
@@ -99,7 +99,7 @@ const int readFeedBackD6 = D6;
 
 /*************************************************************************/
   //-----accumulate counts from flow sensor one, on pin2, interupt 0
-  void flowOneInterupt()
+  void ICACHE_RAM_ATTR flowOneInterupt()
     {
      if (turnRight == 1) {
       feedBackCount--;
@@ -111,9 +111,9 @@ const int readFeedBackD6 = D6;
 
   void allowDeviceUpdate()
   {
-//    server.send(200,"text/plain", "Setting flag...");
-//    ota_flag = true;
-//    time_elapsed = 0;
+    server.send(200,"text/plain", "Setting flag...");
+    ota_flag = true;
+    time_elapsed = 0;
   }
 
 
@@ -174,33 +174,33 @@ void setup(void){
   // MD5(admin) = 21232f297a57a5a743894a0e4a801fc3
   // ArduinoOTA.setPasswordHash("21232f297a57a5a743894a0e4a801fc3");
 
-//  ArduinoOTA.onStart([]() {
-//    Serial.println("Start");
-//  });
-//  ArduinoOTA.onEnd([]() {
-//    Serial.println("\nEnd");
-//  });
-//  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
-//    Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
-//  });
-//  ArduinoOTA.onError([](ota_error_t error) {
-//    Serial.printf("Error[%u]: ", error);
-//    if (error == OTA_AUTH_ERROR) {
-//      Serial.println("Auth Failed");
-//    } else if (error == OTA_BEGIN_ERROR) {
-//      Serial.println("Begin Failed");
-//    } else if (error == OTA_CONNECT_ERROR) {
-//      Serial.println("Connect Failed");
-//    } else if (error == OTA_RECEIVE_ERROR) {
-//      Serial.println("Receive Failed");
-//    } else if (error == OTA_END_ERROR) {
-//      Serial.println("End Failed");
-//    }
-//  });
-//  ArduinoOTA.begin();
-//  Serial.println("Ready");
-//  Serial.print("IP address: ");
-//  Serial.println(WiFi.localIP());
+  ArduinoOTA.onStart([]() {
+    Serial.println("Start");
+  });
+  ArduinoOTA.onEnd([]() {
+    Serial.println("\nEnd");
+  });
+  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+    Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+  });
+  ArduinoOTA.onError([](ota_error_t error) {
+    Serial.printf("Error[%u]: ", error);
+    if (error == OTA_AUTH_ERROR) {
+      Serial.println("Auth Failed");
+    } else if (error == OTA_BEGIN_ERROR) {
+      Serial.println("Begin Failed");
+    } else if (error == OTA_CONNECT_ERROR) {
+      Serial.println("Connect Failed");
+    } else if (error == OTA_RECEIVE_ERROR) {
+      Serial.println("Receive Failed");
+    } else if (error == OTA_END_ERROR) {
+      Serial.println("End Failed");
+    }
+  });
+  ArduinoOTA.begin();
+  Serial.println("Ready");
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());
   
   server.on("/", handleRoot);      //Which routine to handle at root location. This is display page
   server.on("/setLED", handleLED);
@@ -219,16 +219,16 @@ void setup(void){
 }
  
 void loop(void){
-//  if(ota_flag)
-//  {
-//    uint16_t time_start = millis();
-//    while(time_elapsed < 15000)
-//    {
-//      ArduinoOTA.handle();
-//      time_elapsed = millis()-time_start;
-//      delay(10);
-//    }
-//    ota_flag = false;
-//  }
+  if(ota_flag)
+  {
+    uint16_t time_start = millis();
+    while(time_elapsed < 15000)
+    {
+      ArduinoOTA.handle();
+      time_elapsed = millis()-time_start;
+      delay(10);
+    }
+    ota_flag = false;
+  }
   server.handleClient();
 } 
