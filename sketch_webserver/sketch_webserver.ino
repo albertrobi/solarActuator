@@ -37,8 +37,14 @@ const int readFeedBackD6 = D6;
 
  void getFeedBack() {
      String feedBackValue = String(feedBackCount);
-     Serial.println("FeedBack Count: " + feedBackValue);
+     Serial.println("FeedBack Response Count: " + feedBackValue);
      server.send(200, "text/plane", feedBackValue); //Send FeddABack value only to client ajax request
+  }
+
+  void resetFeedBackCounter() {
+     Serial.println("FeedBack Reset Count to 0. ");
+     feedBackCount = 0;
+     server.send(200, "text/plane", "Success");
   }
   
   void handleLED() {
@@ -145,6 +151,7 @@ void setup(void){
   server.on("/motorStop", handleMotorStop);
   server.on("/motorTurnRight", handleMotorTurnRight);
   server.on("/motorTurnLeft", handleMotorTurnLeft);
+  server.on("/resetFeedBackCounter", resetFeedBackCounter);
   
   server.begin();
   Serial.println("HTTP server started");

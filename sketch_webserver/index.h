@@ -15,6 +15,11 @@ const char MAIN_page[] PROGMEM = R"=====(
 </div>
 
 <div>
+  Feedback : <span id="resetFeedBackCounter"></span>
+  <button type="button" onclick="resetFeedBackCounter()">Reset</button>
+<div>
+
+<div>
 <h1>Motor Turning Direction : <span id="motorTurningDirection">Left</span>
 	<button type="button" onclick="motorTurnLeft()">Turn left</button>
 	<button type="button" onclick="motorTurnRight()">Turn right</button><BR>
@@ -83,6 +88,18 @@ function motorTurnRight() {
     }
   };
   xhttp.open("GET", "motorTurnRight", true);
+  xhttp.send();
+}
+
+function resetFeedBackCounter () {
+   var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      document.getElementById("resetFeedBackCounter").innerHTML =
+      this.responseText;
+    }
+  };
+  xhttp.open("GET", "resetFeedBackCounter", true);
   xhttp.send();
 }
 
