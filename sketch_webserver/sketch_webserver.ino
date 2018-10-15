@@ -4,6 +4,7 @@
 #include <ESP8266mDNS.h>
 #include <WiFiUdp.h>
 #include <ArduinoOTA.h>
+#include <time.h>
 
 #include "index.h" //Our HTML webpage contents with javascripts
 
@@ -25,8 +26,12 @@ void handleRoot() {
    server.send(200, "text/html", s); //Send web page
 }
 
+//variables for time
+int timezone = 3*3600;
+int dst = 1; //day light saving
+
 // variables for wifi update
-bool ota_flag = true;
+bool ota_flag = false;
 uint16_t time_elapsed = 0;
  
 // Motor variables
@@ -38,7 +43,6 @@ const int motorDirection = D1;
 const int motor = D2;
 const int keepOnHighD3 = D3;
 const int keepOnHighD4 = D4;
-const int sendFeedBackD5 = D5;
 const int readFeedBackD6 = D6;
 
  void getFeedBack() {
@@ -116,6 +120,18 @@ const int readFeedBackD6 = D6;
     time_elapsed = 0;
   }
 
+   void getDateAndTime()
+  {
+     // time
+   time_t now = time(nullptr);
+   struct tm* p_tm = localtime(&now);
+   String currentTime = String(p_tm->tm_mday) + "/" + String(p_tm->tm_mon+1) + "/" + String(p_tm->tm_year+1900) + " ";
+   currentTime = currentTime + String(p_tm->tm_hour) + ":" + String(p_tm->tm_min) + ":" + String(p_tm->tm_sec);
+   
+   Serial.println("Current Time:" + currentTime);
+   server.send(200, "text/html", currentTime);
+  }
+
 
 String webPage = "";
 
@@ -129,13 +145,11 @@ void setup(void){
   pinMode ( keepOnHighD3, OUTPUT );
   pinMode ( keepOnHighD4, OUTPUT );
   pinMode ( keepOnHighD4, OUTPUT );
-  pinMode (sendFeedBackD5, OUTPUT );
 
   digitalWrite ( motorDirection, LOW );
   digitalWrite ( motor, LOW );
   digitalWrite ( keepOnHighD3, HIGH );
   digitalWrite ( keepOnHighD4, HIGH );
-  digitalWrite ( sendFeedBackD5, HIGH );
 
 //  pinMode(2, OUTPUT);
   delay(1000);
@@ -211,11 +225,19 @@ void setup(void){
   server.on("/motorTurnLeft", handleMotorTurnLeft);
   server.on("/resetFeedBackCounter", resetFeedBackCounter);
   server.on("/startUpdate", allowDeviceUpdate);
-  
+  server.on("/getDateAndTime", getDateAndTime);
+
   server.begin();
   Serial.println("HTTP server started");
 
- 
+   // setup time
+  configTime(timezone, dst, "pool.ntp.org", "time.nist.gov");
+  Serial.println("Waiting for internet time");
+  while (!time(nullptr)){
+     Serial.println("*");
+     delay(1000); 
+  }
+   Serial.println("Time response....OK");
 }
  
 void loop(void){

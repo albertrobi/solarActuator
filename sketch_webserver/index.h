@@ -5,6 +5,9 @@ const char MAIN_page[] PROGMEM = R"=====(
 
 <div id="demo">
 <h1>The ESP8266 NodeMCU Solar Motor controller</h1>
+  Current time is : <span id="currentDateTime">0</span><br>
+</div>
+<div>
   <button type="button" onclick="sendData(1)">LED ON</button>
   <button type="button" onclick="sendData(0)">LED OFF</button><BR>
 </div>
@@ -106,10 +109,11 @@ function resetFeedBackCounter () {
 
 setInterval(function() {
   // Call a function repetatively with 2 Second interval
-  getData();
+  getSensorFeedBackData();
+  getCurrentDateAndTime();
 }, 2000); //2000mSeconds update rate
 
-function getData() {
+function getSensorFeedBackData() {
   var xhttp = new XMLHttpRequest();
   xhttp.onreadystatechange = function() {
     if (this.readyState == 4 && this.status == 200) {
@@ -118,6 +122,18 @@ function getData() {
     }
   };
   xhttp.open("GET", "readFeedBack", true);
+  xhttp.send();
+}
+
+function getCurrentDateAndTime() {
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      document.getElementById("currentDateTime").innerHTML =
+      this.responseText;
+    }
+  };
+  xhttp.open("GET", "getDateAndTime", true);
   xhttp.send();
 }
 </script>
