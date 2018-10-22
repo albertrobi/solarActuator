@@ -8,6 +8,10 @@ const char MAIN_page[] PROGMEM = R"=====(
   Current time is : <span id="currentDateTime">0</span><br>
 </div>
 <div>
+   Sunrize time is : <span id="sunrizeDateTime">0</span><br>
+  <button type="button" onclick="getSunriseAndSunset()">Get sunrize</button>
+<div>
+<div>
   <button type="button" onclick="sendData(1)">LED ON</button>
   <button type="button" onclick="sendData(0)">LED OFF</button><BR>
 </div>
@@ -134,6 +138,18 @@ function getCurrentDateAndTime() {
     }
   };
   xhttp.open("GET", "getDateAndTime", true);
+  xhttp.send();
+}
+
+function getSunriseAndSunset() {
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      document.getElementById("sunrizeDateTime").innerHTML =
+      this.responseText;
+    }
+  };
+  xhttp.open("GET", "getSunriseAndSunset", true);
   xhttp.send();
 }
 </script>

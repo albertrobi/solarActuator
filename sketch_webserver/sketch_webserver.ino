@@ -4,11 +4,16 @@
 #include <ESP8266mDNS.h>
 #include <WiFiUdp.h>
 #include <ArduinoOTA.h>
+#include <ESP8266HTTPClient.h>
 #include <time.h>
+#include <ArduinoJson.h>
 
 #include "index.h" //Our HTML webpage contents with javascripts
 
 #define LED 2  //On board LED
+#define godeanu_latitude    46.770433              //Aleea Godeanu Cluj cordinates
+#define godeanu_longtitude  23.614970 
+// define UTC + 3
 
 MDNSResponder mdns;
 
@@ -36,7 +41,7 @@ uint16_t time_elapsed = 0;
  
 // Motor variables
 int turnRight = 0;
-String motorTurningDirection = "Right";
+String motorTurningDirection = "Right"; //MAX 1149-1150 turns - error 14
 
 volatile unsigned int feedBackCount = 0;
 const int motorDirection = D1;
@@ -130,6 +135,53 @@ const int readFeedBackD6 = D6;
    
    Serial.println("Current Time:" + currentTime);
    server.send(200, "text/html", currentTime);
+  }
+
+  void getSunriseAndSunset() {
+
+     if (WiFi.status() == WL_CONNECTED) {
+        HTTPClient http;  //Object of class HTTPClient
+      
+        http.begin("http://api.sunrise-sunset.org/json?lat="+String(godeanu_latitude)+"&lng="+String(godeanu_longtitude)+"&date=2018-10-22");
+        // add curent date and UTC + 3
+        
+        int httpCode = http.GET();
+        //Check the returning code  
+         Serial.print("result: " + httpCode);                                                                
+        if (httpCode > 0) {
+          // TODO: Parsing
+          const size_t bufferSize = JSON_OBJECT_SIZE(2) + JSON_OBJECT_SIZE(10) + 340;
+          DynamicJsonBuffer jsonBuffer(bufferSize);
+          
+          JsonObject& root = jsonBuffer.parseObject( http.getString());
+          
+          JsonObject& results = root["results"];
+          const char* results_sunrise = results["sunrise"]; // "6:31:05 AM"
+          const char* results_sunset = results["sunset"]; // "5:33:22 PM"
+          const char* results_solar_noon = results["solar_noon"]; // "12:02:14 PM"
+          const char* results_day_length = results["day_length"]; // "11:02:17"
+          const char* results_civil_twilight_begin = results["civil_twilight_begin"]; // "6:04:53 AM"
+          const char* results_civil_twilight_end = results["civil_twilight_end"]; // "5:59:34 PM"
+          const char* results_nautical_twilight_begin = results["nautical_twilight_begin"]; // "5:34:43 AM"
+          const char* results_nautical_twilight_end = results["nautical_twilight_end"]; // "6:29:44 PM"
+          const char* results_astronomical_twilight_begin = results["astronomical_twilight_begin"]; // "5:04:44 AM"
+          const char* results_astronomical_twilight_end = results["astronomical_twilight_end"]; // "6:59:43 PM"
+          
+          const char* status = root["status"]; // "OK"
+
+            // Output to serial monitor
+            Serial.print("Sunrise:");
+            Serial.println(results_sunrise);
+            Serial.print("Sunset:");
+            Serial.println(results_sunset);
+            Serial.print("Day length:"); 
+            Serial.println(results_day_length);
+
+             server.send(200, "text/html", results_sunrise);
+        }
+        http.end();   //Close connection
+      }
+   //server.send(200, "text/html", "Hello");
   }
 
 
@@ -226,6 +278,8 @@ void setup(void){
   server.on("/resetFeedBackCounter", resetFeedBackCounter);
   server.on("/startUpdate", allowDeviceUpdate);
   server.on("/getDateAndTime", getDateAndTime);
+  server.on("/getSunriseAndSunset", getSunriseAndSunset);
+  
 
   server.begin();
   Serial.println("HTTP server started");
@@ -238,6 +292,7 @@ void setup(void){
      delay(1000); 
   }
    Serial.println("Time response....OK");
+
 }
  
 void loop(void){
