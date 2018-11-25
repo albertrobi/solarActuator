@@ -119,7 +119,7 @@ setInterval(function() {
   // Call a function repetatively with 2 Second interval
   getSensorFeedBackData();
   getCurrentDateAndTime();
-}, 200000); //2000mSeconds update rate
+}, 60000); //60000mSeconds update rate
 
 function getSensorFeedBackData() {
   var xhttp = new XMLHttpRequest();
