@@ -8,6 +8,10 @@ const char MAIN_page[] PROGMEM = R"=====(
   Current time is : <span id="currentDateTime">0</span><br>
 </div>
 <div>
+  Install new Software : 
+  <button type="button" onclick="startArduinoOta()">Start OTA</button>
+<div>
+<div>
    Sunrize time is : <span id="sunrizeDateTime">0</span><br>
   <button type="button" onclick="getSunriseAndSunset()">Get sunrize</button>
 <div>
@@ -115,7 +119,7 @@ setInterval(function() {
   // Call a function repetatively with 2 Second interval
   getSensorFeedBackData();
   getCurrentDateAndTime();
-}, 2000); //2000mSeconds update rate
+}, 200000); //2000mSeconds update rate
 
 function getSensorFeedBackData() {
   var xhttp = new XMLHttpRequest();
@@ -150,6 +154,17 @@ function getSunriseAndSunset() {
     }
   };
   xhttp.open("GET", "getSunriseAndSunset", true);
+  xhttp.send();
+}
+
+function startArduinoOta() {
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+     //do nothing
+    }
+  };
+  xhttp.open("GET", "startArduinoOta", true);
   xhttp.send();
 }
 </script>

@@ -1,4 +1,4 @@
-#include <ESP8266WiFi.h>
+  #include <ESP8266WiFi.h>
 #include <WiFiClient.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
@@ -37,7 +37,6 @@ int dst = 1; //day light saving
 
 // variables for wifi update
 bool ota_flag = false;
-uint16_t time_elapsed = 0;
  
 // Motor variables
 int turnRight = 0;
@@ -49,6 +48,11 @@ const int motor = D2;
 const int keepOnHighD3 = D3;
 const int keepOnHighD4 = D4;
 const int readFeedBackD6 = D6;
+
+// config static IP
+IPAddress ip(192, 168, 0, 155); // where xx is the desired IP Address
+IPAddress gateway(192, 168, 0, 1); // set gateway to match your network
+IPAddress subnet(255, 255, 255, 0); // set subnet mask to match your network
 
  void getFeedBack() {
      String feedBackValue = String(feedBackCount);
@@ -122,7 +126,6 @@ const int readFeedBackD6 = D6;
   {
     server.send(200,"text/plain", "Setting flag...");
     ota_flag = true;
-    time_elapsed = 0;
   }
 
    void getDateAndTime()
@@ -184,6 +187,12 @@ const int readFeedBackD6 = D6;
    //server.send(200, "text/html", "Hello");
   }
 
+void startArduinoOta () {
+  // start wifi update
+  Serial.println("OTA START");
+  ota_flag = true;
+  server.send(200, "text/html", "ok");
+}
 
 String webPage = "";
 
@@ -203,8 +212,6 @@ void setup(void){
   digitalWrite ( keepOnHighD3, HIGH );
   digitalWrite ( keepOnHighD4, HIGH );
 
-//  pinMode(2, OUTPUT);
-  delay(1000);
   Serial.begin(115200);
   Serial.println("Booting");
   WiFi.mode(WIFI_STA);
@@ -220,6 +227,7 @@ void setup(void){
   Serial.println("");
   Serial.print("Connected to ");
   Serial.println(ssid);
+  WiFi.config(ip, gateway, subnet);
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
   
@@ -234,15 +242,24 @@ void setup(void){
   // ArduinoOTA.setHostname("myesp8266");
 
   // No authentication by default
-  // ArduinoOTA.setPassword("admin");
+  //ArduinoOTA.setPassword("robi");
 
   // Password can be set with it's md5 value as well
   // MD5(admin) = 21232f297a57a5a743894a0e4a801fc3
   // ArduinoOTA.setPasswordHash("21232f297a57a5a743894a0e4a801fc3");
 
   ArduinoOTA.onStart([]() {
-    Serial.println("Start");
+    String type;
+    if (ArduinoOTA.getCommand() == U_FLASH) {
+      type = "sketch";
+    } else { // U_SPIFFS
+      type = "filesystem";
+    }
+
+    // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
+    Serial.println("Start updating " + type);
   });
+  
   ArduinoOTA.onEnd([]() {
     Serial.println("\nEnd");
   });
@@ -279,6 +296,7 @@ void setup(void){
   server.on("/startUpdate", allowDeviceUpdate);
   server.on("/getDateAndTime", getDateAndTime);
   server.on("/getSunriseAndSunset", getSunriseAndSunset);
+  server.on("/startArduinoOta", startArduinoOta);
   
 
   server.begin();
@@ -296,16 +314,26 @@ void setup(void){
 }
  
 void loop(void){
+  
   if(ota_flag)
   {
+    Serial.println("IN OTA CYCLE");
+    //start OTA LED ON
+    digitalWrite(LED,LOW); //LED ON
+    
+    uint16_t time_elapsed = 0;
     uint16_t time_start = millis();
-    while(time_elapsed < 15000)
+    while(time_elapsed < 25000)
     {
       ArduinoOTA.handle();
       time_elapsed = millis()-time_start;
       delay(10);
     }
     ota_flag = false;
+    //END OTA LED OFF 
+    digitalWrite(LED,HIGH); //LED OFF
+    
+     Serial.println("Exit OTA CYCLE");
   }
   server.handleClient();
 } 
