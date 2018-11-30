@@ -1,5 +1,5 @@
 #include <ESP8266WiFi.h>
-#include <WiFiClient.h>
+#include <WiFiClientSecure.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
 #include <WiFiUdp.h>
@@ -10,6 +10,7 @@
 #include <TimeLib.h>
 #include <TimeAlarms.h>
 #include <ArduinoJson.h>
+#include <ESP8266TOTP.h>
 #include "index.h" //Our HTML webpage contents with javascripts
 
 #define LED 2  //On board LED
@@ -26,6 +27,9 @@ MDNSResponder mdns;
 // Replace with your network credentials
 const char* ssid = "BalazsEsAlbert";
 const char* password = "emeseesrobi87";
+
+//TOTP
+const uint64_t STATIC_EPOCH = 1480712707;
 
 ESP8266WebServer server(80); //Server on port 80
 
@@ -351,9 +355,50 @@ void setup(void){
      Alarm.delay(1000); 
   }
   Serial.println("Time response....OK");
+  
+/*************************************************************************/
+/*** Setup Scheduler ALARMS **********************************************************/
+/*************************************************************************/ 
   time_t now = time(nullptr);
   setTime(now); 
   Alarm.timerRepeat(15, Repeats); // timer for every 15 seconds  
+
+  totpData data;
+
+  if (ESP8266TOTP::GetNewKey(data.keyBytes)) {
+
+    for(int i = 0; i < TOTP_SECRET_BYTE_COUNT; i++) {
+      Serial.println(data.keyBytes[i]);
+    }
+
+    unsigned char data32[BASE_32_ENCODE_LENGTH];
+    if (ESP8266TOTP::GetBase32Key(data.keyBytes, data32)) {
+
+      Serial.println(reinterpret_cast<char*>(&data32));
+      Serial.println(ESP8266TOTP::GetQrCodeImageUri(data.keyBytes, "Some host", "Some issuer"));
+
+      int otp = ESP8266TOTP::GetTOTPToken(STATIC_EPOCH, data.keyBytes);
+      Serial.println(otp);
+
+      if (ESP8266TOTP::IsTokenValid(STATIC_EPOCH, data.keyBytes, otp)) {
+
+        //this code path will always be taken in this test application
+        //since we're basically comparing a firmware calculated OTP with the same
+        //firmware calculated OTP passed as the ESP8266TOTP::IsTokenValid candidateOtp parameter.
+        //In a real application, STATIC_EPOCH would be an NTP client determined epoch time value
+        //and the ESP8266TOTP::IsTokenValid candidateOtp parameter would be supplied to the
+        //firmware in some way i.e. as a HTTP form post value
+
+        Serial.println("ESP8266TOTP::IsTokenValid..Yes it is!!");
+      }
+
+    } else {
+      Serial.println("ESP8266TOTP::GetBase32Key failed");
+    }
+
+  } else {
+    Serial.println("ESP8266TOTP::GetNewKey failed");
+  }
 }
  
 void loop(void){
