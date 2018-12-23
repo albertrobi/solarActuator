@@ -33,10 +33,16 @@ const char* ESP8266TOTP::qrCodeUriIssuer = "&issuer=";
 bool ICACHE_FLASH_ATTR ESP8266TOTP::GetNewKey(uint8_t* keyBytes) {
 
     Serial.println("GetNewKey");
-	for(int i = 0; i < TOTP_SECRET_BYTE_COUNT; i++) {
-		char rndByte = ESP8266TrueRandom.randomByte();
-		keyBytes[i] = rndByte;
-	}
+	//byte buf[10];
+	String myString = "robiTestSolarAPP";
+	//for(int i = 0; i < TOTP_SECRET_BYTE_COUNT; i++) {
+	//	char rndByte = ESP8266TrueRandom.randomByte();
+	//	keyBytes[i] = rndByte;
+	//}
+	//byte secretKey[9] = {01100101, 01101110, 01101101, 01100101, 01100111, 01100101, 01101110, 00111000, 00110111};
+    //memcpy(secretKey, keyBytes, sizeof(secretKey));
+	//uint8_t* p = reinterpret_cast<uint8_t*>(myString.c_str());
+	myString.getBytes(keyBytes, myString.length()+1);
 
 	return true;
 
