@@ -5,9 +5,18 @@ const char MAIN_page[] PROGMEM = R"=====(
 
 <div id="demo">
 <h1>The ESP8266 NodeMCU Solar Motor controller</h1>
-  Current time is : <span id="currentDateTime">0</span><br>
 </div>
+
+<p>
+<div> 
+  <h4>
+    Password: <input type="text" id="password">
+  </h4>
+<div> 
+</p>
+
 <div>
+  Current time is : <span id="currentDateTime">0</span><br>
   Install new Software : 
   <button type="button" onclick="startArduinoOta()">Start OTA</button>
 <div>
@@ -79,14 +88,17 @@ function sendMotorStop() {
 }
 
 function motorTurnLeft() {
+  var password =  document.getElementById("password").value 
   var xhttp = new XMLHttpRequest();
   xhttp.onreadystatechange = function() {
     if (this.readyState == 4 && this.status == 200) {
-      document.getElementById("motorTurningDirection").innerHTML =
-      this.responseText;
+      document.getElementById("motorTurningDirection").innerHTML = this.responseText;
+      document.getElementById("motorTurningDirection").style.color = "blue";
+    } else if (this.status == 400) {
+      document.getElementById("motorTurningDirection").style.color = "red";
     }
   };
-  xhttp.open("GET", "motorTurnLeft", true);
+  xhttp.open("GET", "motorTurnLeft?TOTPKEY="+password, true);
   xhttp.send();
 }
 
@@ -137,8 +149,7 @@ function getCurrentDateAndTime() {
   var xhttp = new XMLHttpRequest();
   xhttp.onreadystatechange = function() {
     if (this.readyState == 4 && this.status == 200) {
-      document.getElementById("currentDateTime").innerHTML =
-      this.responseText;
+      document.getElementById("currentDateTime").innerHTML = this.responseText;
     }
   };
   xhttp.open("GET", "getDateAndTime", true);

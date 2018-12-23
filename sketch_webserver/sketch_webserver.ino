@@ -18,9 +18,12 @@
 #define godeanu_longtitude  23.614970 
 
 //variables for time
-int timezone = 2*3600;
+int timezone = 0; // 2*3600;
 int dst = 0; //day light saving
 time_t ntp_time = 0;
+
+//TOTP DATA
+totpData data;
 
 MDNSResponder mdns;
 
@@ -28,15 +31,23 @@ MDNSResponder mdns;
 const char* ssid = "BalazsEsAlbert";
 const char* password = "emeseesrobi87";
 
-//TOTP
-const uint64_t STATIC_EPOCH = 1480712707;
-
 ESP8266WebServer server(80); //Server on port 80
 
 //===============================================================
 // This routine is executed when you open its IP in browser
 //===============================================================
 void handleRoot() {
+   String s = MAIN_page; //Read HTML contents
+   server.send(200, "text/html", s); //Send web page
+}
+
+void handleNotFound()
+{ 
+    server.sendHeader("Location", "/",true); //Redirect to our html web page 
+    server.send(302, "text/plane",""); 
+}
+
+void navigateSolarControll() {
    String s = MAIN_page; //Read HTML contents
    server.send(200, "text/html", s); //Send web page
 }
@@ -107,10 +118,21 @@ IPAddress subnet(255, 255, 255, 0); // set subnet mask
   }
   
   void handleMotorTurnLeft() {
-    turnRight = 0;
-    Serial.print("Motor Left");
-    digitalWrite ( motorDirection, LOW );
-    server.send(200, "text/html", "LEFT");
+    if (server.arg("TOTPKEY")== ""){     //Parameter not found
+       Serial.print("Invalid TOTP key provided");
+       server.send(400, "text/html", "BAD Request");
+    }else {     //Parameter found
+      String totpKey = server.arg("TOTPKEY");
+      if (isTokenValid(totpKey)) {
+        turnRight = 0;
+        Serial.print("Motor Left");
+        digitalWrite ( motorDirection, LOW );
+        server.send(200, "text/html", "LEFT");
+      } else {
+          Serial.print("Invalid TOTP key provided");
+          server.send(400, "text/html", "BAD Request");
+      }
+    }
   }
   
   void handleMotorTurnRight() {
@@ -231,6 +253,19 @@ void printDigits(int digits)
  Serial.print(digits);
 }
 
+/*
+ * returns an indicator whether the totp value in the local suppliedTotp string variable 
+ * matches the current otp calculated from the current epoch offset and secret key bytes
+ */
+bool isTokenValid( String suppliedTotp) {
+    char *endptr;
+    int suppliedOtp = strtoul(suppliedTotp.c_str(), &endptr, 10);
+    time_t now = time(nullptr);
+    //check the supplied OTP against the current secret key
+    return ((*endptr == '\0') &&
+            (ESP8266TOTP::IsTokenValid(now, data.keyBytes, suppliedOtp)));
+}
+
 String webPage = "";
 
 void setup(void){
@@ -323,11 +358,14 @@ void setup(void){
 //  });
 //  ArduinoOTA.begin();
 
+
+
   Serial.println("Ready");
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());
   
   server.on("/", handleRoot);      //Which routine to handle at root location. This is display page
+  server.onNotFound(handleNotFound); 
   server.on("/setLED", handleLED);
   server.on("/readFeedBack", getFeedBack);
   server.on("/motorStart", handleMotorStart);
@@ -340,7 +378,6 @@ void setup(void){
   server.on("/getSunriseAndSunset", getSunriseAndSunset);
   server.on("/startArduinoOta", startArduinoOta);
   
-
   server.begin();
   Serial.println("HTTP server started");
 
@@ -363,24 +400,26 @@ void setup(void){
   setTime(now); 
   Alarm.timerRepeat(15, Repeats); // timer for every 15 seconds  
 
-  totpData data;
+/*************************************************************************/
+/*** Setup TOTP **********************************************************/
+/*************************************************************************/ 
 
   if (ESP8266TOTP::GetNewKey(data.keyBytes)) {
-
-    for(int i = 0; i < TOTP_SECRET_BYTE_COUNT; i++) {
-      Serial.println(data.keyBytes[i]);
-    }
+    //Serial.println((char*)data.keyBytes);
 
     unsigned char data32[BASE_32_ENCODE_LENGTH];
     if (ESP8266TOTP::GetBase32Key(data.keyBytes, data32)) {
-
+      Serial.println("Base 32:");   
       Serial.println(reinterpret_cast<char*>(&data32));
-      Serial.println(ESP8266TOTP::GetQrCodeImageUri(data.keyBytes, "Some host", "Some issuer"));
-
-      int otp = ESP8266TOTP::GetTOTPToken(STATIC_EPOCH, data.keyBytes);
+      Serial.println(now);     
+      int otp = ESP8266TOTP::GetTOTPToken(now, data.keyBytes);
+      Serial.println("OTP Token: ");
       Serial.println(otp);
+      
+      Serial.println(reinterpret_cast<char*>(&data32));
+      Serial.println(ESP8266TOTP::GetQrCodeImageUri(data.keyBytes, "albertrobi", "albertrobi"));
 
-      if (ESP8266TOTP::IsTokenValid(STATIC_EPOCH, data.keyBytes, otp)) {
+      if (ESP8266TOTP::IsTokenValid(now, data.keyBytes, otp)) {
 
         //this code path will always be taken in this test application
         //since we're basically comparing a firmware calculated OTP with the same
