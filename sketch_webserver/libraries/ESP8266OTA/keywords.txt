@@ -1,0 +1,23 @@
+#######################################
+# Syntax Coloring Map For ESP8266OTA
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+ESP8266OTA	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+setup	KEYWORD2
+setTitle	KEYWORD2
+setBanner	KEYWORD2
+setBuild	KEYWORD2
+setBranch	KEYWORD2
+setDeviceInfo	KEYWORD2
+setFooter	KEYWORD2
+setUpdaterUi	KEYWORD2
+updatePasswd	KEYWORD2
