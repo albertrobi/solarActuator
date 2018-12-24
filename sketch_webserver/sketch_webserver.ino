@@ -54,7 +54,10 @@ void navigateSolarControll() {
 
 // variables for wifi update
 bool ota_flag = false;
- 
+
+// variables for sun auto tracking
+bool sunAutoTrack = false;
+
 // Motor variables
 int turnRight = 0;
 String motorTurningDirection = "Right"; //MAX 1149-1150 turns - error 14
@@ -82,37 +85,43 @@ IPAddress subnet(255, 255, 255, 0); // set subnet mask
   }
 
   void resetFeedBackCounter() {
-     Serial.println("FeedBack Reset Count to 0. ");
-     feedBackCount = 0;
-     server.send(200, "text/plane", "Success");
+    String totpKey = server.arg("TOTPKEY");
+     if (isTokenValid(totpKey)) {
+       Serial.println("FeedBack Reset Count to 0. ");
+       feedBackCount = 0;
+       server.send(200, "text/plane", "0");
+     } else {
+       Serial.println("Invalid TOTP key provided");
+       server.send(400, "text/html", "BAD Request");
+     }
   }
-  
-  void handleLED() {
-     String ledState = "OFF";
-     String t_state = server.arg("LEDstate"); //Refer  xhttp.open("GET", "setLED?LEDstate="+led, true);
-     Serial.println(t_state);
-     if(t_state == "1")
-     {
-      digitalWrite(LED,LOW); //LED ON
-      ledState = "ON"; //Feedback parameter
+ 
+  void startAutoSunTrack() {
+     String totpKey = server.arg("TOTPKEY");
+     if (isTokenValid(totpKey)) {
+        if (!sunAutoTrack) {
+          sunAutoTrack = true;
+          Serial.println("Sun Auto Track ON");
+          server.send(200, "text/html", "ON");
+        } else {
+          sunAutoTrack = false;
+          Serial.println("Sun Auto Track OFF");
+          server.send(200, "text/html", "OFF");
+        }
+     } else {
+       Serial.println("Invalid TOTP key provided");
+       server.send(400, "text/html", "BAD Request");
      }
-     else
-     {
-      digitalWrite(LED,HIGH); //LED OFF
-      ledState = "OFF"; //Feedback parameter  
-     }
-     
-     server.send(200, "text/plane", ledState); //Send web page
   }
   
   void handleMotorStart() {
      String totpKey = server.arg("TOTPKEY");
      if (isTokenValid(totpKey)) {
          digitalWrite ( motor, HIGH );
-         Serial.print("Motor Start");
+         Serial.println("Motor Start");
          server.send(200, "text/html", "Started");
      } else {
-       Serial.print("Invalid TOTP key provided");
+       Serial.println("Invalid TOTP key provided");
        server.send(400, "text/html", "BAD Request");
      }
   }
@@ -121,10 +130,10 @@ IPAddress subnet(255, 255, 255, 0); // set subnet mask
      String totpKey = server.arg("TOTPKEY");
      if (isTokenValid(totpKey)) {
        digitalWrite ( motor, LOW );
-       Serial.print("Motor Stop");
+       Serial.println("Motor Stop");
        server.send(200, "text/html", "Stoped");
      } else {
-       Serial.print("Invalid TOTP key provided");
+       Serial.println("Invalid TOTP key provided");
        server.send(400, "text/html", "BAD Request");
      }
   }
@@ -133,11 +142,11 @@ IPAddress subnet(255, 255, 255, 0); // set subnet mask
       String totpKey = server.arg("TOTPKEY");
       if (isTokenValid(totpKey)) {
         turnRight = 0;
-        Serial.print("Motor Left");
+        Serial.println("Motor Left");
         digitalWrite ( motorDirection, LOW );
         server.send(200, "text/html", "LEFT");
       } else {
-          Serial.print("Invalid TOTP key provided");
+          Serial.println("Invalid TOTP key provided");
           server.send(400, "text/html", "BAD Request");
       }
   }
@@ -147,10 +156,10 @@ IPAddress subnet(255, 255, 255, 0); // set subnet mask
      if (isTokenValid(totpKey)) {
         turnRight = 1;
         digitalWrite ( motorDirection, HIGH );
-        Serial.print("Motor Right");
+        Serial.println("Motor Right");
         server.send(200, "text/html", "Right");
       } else {
-          Serial.print("Invalid TOTP key provided");
+          Serial.println("Invalid TOTP key provided");
           server.send(400, "text/html", "BAD Request");
       }
   }
@@ -371,6 +380,43 @@ void setup(void){
 //  });
 //  ArduinoOTA.begin();
 
+/*************************************************************************/
+/*** TOTP Example ********************************************************/
+/*************************************************************************/ 
+// if (ESP8266TOTP::GetNewKey(data.keyBytes)) {
+//    Serial.println((char*)data.keyBytes);
+//
+//    unsigned char data32[BASE_32_ENCODE_LENGTH];
+//    if (ESP8266TOTP::GetBase32Key(data.keyBytes, data32)) {
+//      Serial.println("Base 32:");   
+//      Serial.println(reinterpret_cast<char*>(&data32));
+//      Serial.println(now);     
+//      int otp = ESP8266TOTP::GetTOTPToken(now, data.keyBytes);
+//      Serial.println("OTP Token: ");
+//      Serial.println(otp);
+//      
+//      Serial.println(reinterpret_cast<char*>(&data32));
+//      Serial.println(ESP8266TOTP::GetQrCodeImageUri(data.keyBytes, "albertrobi", "albertrobi"));
+//
+//      if (ESP8266TOTP::IsTokenValid(now, data.keyBytes, otp)) {
+//
+//        //this code path will always be taken in this test application
+//        //since we're basically comparing a firmware calculated OTP with the same
+//        //firmware calculated OTP passed as the ESP8266TOTP::IsTokenValid candidateOtp parameter.
+//        //In a real application, STATIC_EPOCH would be an NTP client determined epoch time value
+//        //and the ESP8266TOTP::IsTokenValid candidateOtp parameter would be supplied to the
+//        //firmware in some way i.e. as a HTTP form post value
+//
+//        Serial.println("ESP8266TOTP::IsTokenValid..Yes it is!!");
+//      }
+//
+//    } else {
+//      Serial.println("ESP8266TOTP::GetBase32Key failed");
+//    }
+//
+//  } else {
+//    Serial.println("ESP8266TOTP::GetNewKey failed");
+//  }
 
 
   Serial.println("Ready");
@@ -379,7 +425,7 @@ void setup(void){
   
   server.on("/", handleRoot);      //Which routine to handle at root location. This is display page
   server.onNotFound(handleNotFound); 
-  server.on("/setLED", handleLED);
+  server.on("/autoSunTrack", startAutoSunTrack);
   server.on("/readFeedBack", getFeedBack);
   server.on("/motorStart", handleMotorStart);
   server.on("/motorStop", handleMotorStop);
@@ -416,41 +462,7 @@ void setup(void){
 /*************************************************************************/
 /*** Setup TOTP **********************************************************/
 /*************************************************************************/ 
-
-  if (ESP8266TOTP::GetNewKey(data.keyBytes)) {
-    //Serial.println((char*)data.keyBytes);
-
-    unsigned char data32[BASE_32_ENCODE_LENGTH];
-    if (ESP8266TOTP::GetBase32Key(data.keyBytes, data32)) {
-      Serial.println("Base 32:");   
-      Serial.println(reinterpret_cast<char*>(&data32));
-      Serial.println(now);     
-      int otp = ESP8266TOTP::GetTOTPToken(now, data.keyBytes);
-      Serial.println("OTP Token: ");
-      Serial.println(otp);
-      
-      Serial.println(reinterpret_cast<char*>(&data32));
-      Serial.println(ESP8266TOTP::GetQrCodeImageUri(data.keyBytes, "albertrobi", "albertrobi"));
-
-      if (ESP8266TOTP::IsTokenValid(now, data.keyBytes, otp)) {
-
-        //this code path will always be taken in this test application
-        //since we're basically comparing a firmware calculated OTP with the same
-        //firmware calculated OTP passed as the ESP8266TOTP::IsTokenValid candidateOtp parameter.
-        //In a real application, STATIC_EPOCH would be an NTP client determined epoch time value
-        //and the ESP8266TOTP::IsTokenValid candidateOtp parameter would be supplied to the
-        //firmware in some way i.e. as a HTTP form post value
-
-        Serial.println("ESP8266TOTP::IsTokenValid..Yes it is!!");
-      }
-
-    } else {
-      Serial.println("ESP8266TOTP::GetBase32Key failed");
-    }
-
-  } else {
-    Serial.println("ESP8266TOTP::GetNewKey failed");
-  }
+    ESP8266TOTP::GetNewKey(data.keyBytes);
 }
  
 void loop(void){

@@ -21,22 +21,16 @@ const char MAIN_page[] PROGMEM = R"=====(
   <button type="button" onclick="startArduinoOta()">Start OTA</button>
 <div>
 <div>
-   Sunrize time is : <span id="sunrizeDateTime">0</span><br>
+   Sunrize time is : <span id="sunrizeDateTime">0</span>
   <button type="button" onclick="getSunriseAndSunset()">Get sunrize</button>
 <div>
 <div>
-  <button type="button" onclick="sendData(1)">LED ON</button>
-  <button type="button" onclick="sendData(0)">LED OFF</button><BR>
+  Sun Auto Track is : <span id="autoTrackState"> OFF </span>
+  <button type="button" onclick="startAutoSunTrack()">Auto Track ON/OFF</button>
 </div>
-
 <div>
-  Motor Feedback Value is : <span id="FeedBackValue">0</span><br>
-    LED State is : <span id="LEDState">NA</span>
-</div>
-
-<div>
-  Feedback : <span id="resetFeedBackCounter"></span>
-  <button type="button" onclick="resetFeedBackCounter()">Reset</button>
+  Motor Feedback Value is : <span id="feedBackValue">0</span>
+  <button type="button" onclick="resetFeedBackCounter()">Reset Feedback counter</button>
 <div>
 
 <div>
@@ -51,20 +45,23 @@ const char MAIN_page[] PROGMEM = R"=====(
 <div>
 
 <script>
-function sendData(led) {
+function startAutoSunTrack() {
+  var password =  document.getElementById("password").value; 
   var xhttp = new XMLHttpRequest();
   xhttp.onreadystatechange = function() {
     if (this.readyState == 4 && this.status == 200) {
-      document.getElementById("LEDState").innerHTML =
-      this.responseText;
+      document.getElementById("autoTrackState").innerHTML = this.responseText;
+      document.getElementById("autoTrackState").style.color = "blue";
+    } else if (this.status == 400) {
+      document.getElementById("autoTrackState").style.color = "red";
     }
   };
-  xhttp.open("GET", "setLED?LEDstate="+led, true);
+  xhttp.open("GET", "autoSunTrack?TOTPKEY="+password, true);
   xhttp.send();
 }
 
 function sendMotorStart() {
-  var password =  document.getElementById("password").value 
+  var password =  document.getElementById("password").value; 
   var xhttp = new XMLHttpRequest();
   xhttp.onreadystatechange = function() {
      if (this.readyState == 4 && this.status == 200) {
@@ -79,7 +76,7 @@ function sendMotorStart() {
 }
 
 function sendMotorStop() {
-  var password =  document.getElementById("password").value 
+  var password =  document.getElementById("password").value; 
   var xhttp = new XMLHttpRequest();
   xhttp.onreadystatechange = function() {
      if (this.readyState == 4 && this.status == 200) {
@@ -94,7 +91,7 @@ function sendMotorStop() {
 }
 
 function motorTurnLeft() {
-  var password =  document.getElementById("password").value 
+  var password =  document.getElementById("password").value; 
   var xhttp = new XMLHttpRequest();
   xhttp.onreadystatechange = function() {
     if (this.readyState == 4 && this.status == 200) {
@@ -109,7 +106,7 @@ function motorTurnLeft() {
 }
 
 function motorTurnRight() {
-  var password =  document.getElementById("password").value 
+  var password =  document.getElementById("password").value; 
   var xhttp = new XMLHttpRequest();
   xhttp.onreadystatechange = function() {
     if (this.readyState == 4 && this.status == 200) {
@@ -124,14 +121,17 @@ function motorTurnRight() {
 }
 
 function resetFeedBackCounter () {
+  var password =  document.getElementById("password").value;
   var xhttp = new XMLHttpRequest();
   xhttp.onreadystatechange = function() {
     if (this.readyState == 4 && this.status == 200) {
-      document.getElementById("resetFeedBackCounter").innerHTML =
-      this.responseText;
+      document.getElementById("feedBackValue").innerHTML = this.responseText;
+      document.getElementById("feedBackValue").style.color = "blue";
+    } else if (this.status == 400) {
+      document.getElementById("feedBackValue").style.color = "red";
     }
   };
-  xhttp.open("GET", "resetFeedBackCounter", true);
+  xhttp.open("GET", "resetFeedBackCounter?TOTPKEY="+password, true);
   xhttp.send();
 }
 
@@ -140,14 +140,13 @@ setInterval(function() {
   // Call a function repetatively with 2 Second interval
   getSensorFeedBackData();
   getCurrentDateAndTime();
-}, 60000); //60000mSeconds update rate
+}, 20000); //60000mSeconds update rate
 
 function getSensorFeedBackData() {
   var xhttp = new XMLHttpRequest();
   xhttp.onreadystatechange = function() {
     if (this.readyState == 4 && this.status == 200) {
-      document.getElementById("FeedBackValue").innerHTML =
-      this.responseText;
+      document.getElementById("feedBackValue").innerHTML = this.responseText;
     }
   };
   xhttp.open("GET", "readFeedBack", true);
