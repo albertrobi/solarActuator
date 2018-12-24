@@ -106,22 +106,30 @@ IPAddress subnet(255, 255, 255, 0); // set subnet mask
   }
   
   void handleMotorStart() {
-     digitalWrite ( motor, HIGH );
-     Serial.print("Motor Start");
-     server.send(200, "text/html", "Started");
+     String totpKey = server.arg("TOTPKEY");
+     if (isTokenValid(totpKey)) {
+         digitalWrite ( motor, HIGH );
+         Serial.print("Motor Start");
+         server.send(200, "text/html", "Started");
+     } else {
+       Serial.print("Invalid TOTP key provided");
+       server.send(400, "text/html", "BAD Request");
+     }
   }
   
   void handleMotorStop() {
-     digitalWrite ( motor, LOW );
-      Serial.print("Motor Stop");
-     server.send(200, "text/html", "Stoped");
+     String totpKey = server.arg("TOTPKEY");
+     if (isTokenValid(totpKey)) {
+       digitalWrite ( motor, LOW );
+       Serial.print("Motor Stop");
+       server.send(200, "text/html", "Stoped");
+     } else {
+       Serial.print("Invalid TOTP key provided");
+       server.send(400, "text/html", "BAD Request");
+     }
   }
   
   void handleMotorTurnLeft() {
-    if (server.arg("TOTPKEY")== ""){     //Parameter not found
-       Serial.print("Invalid TOTP key provided");
-       server.send(400, "text/html", "BAD Request");
-    }else {     //Parameter found
       String totpKey = server.arg("TOTPKEY");
       if (isTokenValid(totpKey)) {
         turnRight = 0;
@@ -132,14 +140,19 @@ IPAddress subnet(255, 255, 255, 0); // set subnet mask
           Serial.print("Invalid TOTP key provided");
           server.send(400, "text/html", "BAD Request");
       }
-    }
   }
   
   void handleMotorTurnRight() {
-    turnRight = 1;
-    digitalWrite ( motorDirection, HIGH );
-    Serial.print("Motor Right");
-    server.send(200, "text/html", "Right");
+     String totpKey = server.arg("TOTPKEY");
+     if (isTokenValid(totpKey)) {
+        turnRight = 1;
+        digitalWrite ( motorDirection, HIGH );
+        Serial.print("Motor Right");
+        server.send(200, "text/html", "Right");
+      } else {
+          Serial.print("Invalid TOTP key provided");
+          server.send(400, "text/html", "BAD Request");
+      }
   }
 
 /*************************************************************************/

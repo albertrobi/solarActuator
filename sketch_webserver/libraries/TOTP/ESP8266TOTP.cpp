@@ -34,7 +34,7 @@ bool ICACHE_FLASH_ATTR ESP8266TOTP::GetNewKey(uint8_t* keyBytes) {
 
     Serial.println("GetNewKey");
 	//byte buf[10];
-	String myString = "robiTestSolarAPP";
+	String myString = "yoursecretPass12";
 	//for(int i = 0; i < TOTP_SECRET_BYTE_COUNT; i++) {
 	//	char rndByte = ESP8266TrueRandom.randomByte();
 	//	keyBytes[i] = rndByte;

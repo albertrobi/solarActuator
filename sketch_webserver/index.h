@@ -64,26 +64,32 @@ function sendData(led) {
 }
 
 function sendMotorStart() {
+  var password =  document.getElementById("password").value 
   var xhttp = new XMLHttpRequest();
   xhttp.onreadystatechange = function() {
-    if (this.readyState == 4 && this.status == 200) {
-      document.getElementById("motorState").innerHTML =
-      this.responseText;
+     if (this.readyState == 4 && this.status == 200) {
+      document.getElementById("motorState").innerHTML = this.responseText;
+      document.getElementById("motorState").style.color = "blue";
+    } else if (this.status == 400) {
+      document.getElementById("motorState").style.color = "red";
     }
   };
-  xhttp.open("GET", "motorStart", true);
+  xhttp.open("GET", "motorStart?TOTPKEY="+password, true);
   xhttp.send();
 }
 
 function sendMotorStop() {
+  var password =  document.getElementById("password").value 
   var xhttp = new XMLHttpRequest();
   xhttp.onreadystatechange = function() {
-    if (this.readyState == 4 && this.status == 200) {
-      document.getElementById("motorState").innerHTML =
-      this.responseText;
+     if (this.readyState == 4 && this.status == 200) {
+      document.getElementById("motorState").innerHTML = this.responseText;
+      document.getElementById("motorState").style.color = "blue";
+    } else if (this.status == 400) {
+      document.getElementById("motorState").style.color = "red";
     }
   };
-  xhttp.open("GET", "motorStop", true);
+  xhttp.open("GET", "motorStop?TOTPKEY="+password, true);
   xhttp.send();
 }
 
@@ -103,19 +109,22 @@ function motorTurnLeft() {
 }
 
 function motorTurnRight() {
+  var password =  document.getElementById("password").value 
   var xhttp = new XMLHttpRequest();
   xhttp.onreadystatechange = function() {
     if (this.readyState == 4 && this.status == 200) {
-      document.getElementById("motorTurningDirection").innerHTML =
-      this.responseText;
+      document.getElementById("motorTurningDirection").innerHTML = this.responseText;
+      document.getElementById("motorTurningDirection").style.color = "blue";
+    } else if (this.status == 400) {
+      document.getElementById("motorTurningDirection").style.color = "red";
     }
   };
-  xhttp.open("GET", "motorTurnRight", true);
+  xhttp.open("GET", "motorTurnRight?TOTPKEY="+password, true);
   xhttp.send();
 }
 
 function resetFeedBackCounter () {
-   var xhttp = new XMLHttpRequest();
+  var xhttp = new XMLHttpRequest();
   xhttp.onreadystatechange = function() {
     if (this.readyState == 4 && this.status == 200) {
       document.getElementById("resetFeedBackCounter").innerHTML =
