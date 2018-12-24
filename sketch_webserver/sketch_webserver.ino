@@ -140,14 +140,14 @@ IPAddress subnet(255, 255, 255, 0); // set subnet mask
   
   void handleMotorStop() {
      String totpKey = server.arg("TOTPKEY");
-     if (isTokenValid(totpKey)) {
+    // if (isTokenValid(totpKey)) {
        digitalWrite ( motor, LOW );
        Serial.println("Motor Stop");
        server.send(200, "text/html", "Stoped");
-     } else {
-       Serial.println("Invalid TOTP key provided");
-       server.send(400, "text/html", "BAD Request");
-     }
+//     } else {
+//       Serial.println("Invalid TOTP key provided");
+//       server.send(400, "text/html", "BAD Request");
+//     }
   }
   
   void handleMotorTurnLeft() {
@@ -183,9 +183,9 @@ IPAddress subnet(255, 255, 255, 0); // set subnet mask
   void ICACHE_RAM_ATTR flowOneInterupt()
     {
      if (turnRight == 1) {
-      feedBackCount--;
-     } else {
       feedBackCount++;
+     } else {
+      feedBackCount--;
      }
      Serial.print("FeedBack counts:  "); Serial.println(feedBackCount); 
    }
@@ -305,7 +305,7 @@ bool isTokenValid( String suppliedTotp) {
 /*************************************************************************/
 void initSolarTracking () {
   if (sunAutoTrack) { //if sun tracking enabled
-     Serial.println("---- Sun auto track started ---- "); 
+     Serial.println("---- Sun auto track started ---- ");
      sameFeedBackNr = 0; 
      lastFeedBackCount = feedBackCount; 
     //move panel to starting position, rotate max left (city)
@@ -316,7 +316,7 @@ void initSolarTracking () {
     Serial.println("Motor Start");
     time_t now = time(nullptr);
     setTime(now); 
-    panelMovingAlarm = Alarm.timerRepeat(1, isPanelMoving); // timer for every 15 seconds 
+    panelMovingAlarm = Alarm.timerRepeat(2, isPanelMoving); // timer for every 15 seconds 
   }
 }
 
@@ -331,6 +331,7 @@ void isPanelMoving () {
       Alarm.disable (panelMovingAlarm);
       Serial.println("Motor Stop");
       digitalWrite ( motor, LOW ); 
+      feedBackCount = 0;
       calculateSunPosition();
       sunTrackerAlarm = Alarm.timerRepeat(900, calculateSunPosition); // timer for every 15 minutes 
     }
@@ -348,7 +349,7 @@ void calculateSunPosition() {
 //      difftime()
 //      time_t t = time(nullptr);
 //     maxRotation
-     desiredPosition = 105;
+     desiredPosition = 45;
      // start rotation
      turnRight = 1;
      digitalWrite ( motorDirection, HIGH );
