@@ -25,6 +25,10 @@ time_t ntp_time = 0;
 //TOTP DATA
 totpData data;
 
+//ALARMS
+AlarmID_t panelMovingAlarm;
+AlarmID_t sunTrackerAlarm;
+
 MDNSResponder mdns;
 
 // Replace with your network credentials
@@ -57,12 +61,19 @@ bool ota_flag = false;
 
 // variables for sun auto tracking
 bool sunAutoTrack = false;
+bool initSunAutoTrack = false;
 
 // Motor variables
 int turnRight = 0;
 String motorTurningDirection = "Right"; //MAX 1149-1150 turns - error 14
+volatile unsigned int maxRotation = 1145;
 
 volatile unsigned int feedBackCount = 0;
+volatile unsigned int desiredPosition = 0;
+volatile unsigned int feedBackCountMovePosition = 0;
+volatile unsigned int lastFeedBackCount = 0;
+volatile unsigned int sameFeedBackNr = 0;
+
 const int motorDirection = D1;
 const int motor = D2;
 const int keepOnHighD3 = D3;
@@ -80,7 +91,7 @@ IPAddress subnet(255, 255, 255, 0); // set subnet mask
 /*************************************************************************/
  void getFeedBack() {
      String feedBackValue = String(feedBackCount);
-     Serial.println("FeedBack Response Count: " + feedBackValue);
+   //  Serial.println("FeedBack Response Count: " + feedBackValue);
      server.send(200, "text/plane", feedBackValue); //Send FeddABack value only to client ajax request
   }
 
@@ -103,6 +114,7 @@ IPAddress subnet(255, 255, 255, 0); // set subnet mask
           sunAutoTrack = true;
           Serial.println("Sun Auto Track ON");
           server.send(200, "text/html", "ON");
+          initSolarTracking();
         } else {
           sunAutoTrack = false;
           Serial.println("Sun Auto Track OFF");
@@ -188,7 +200,7 @@ IPAddress subnet(255, 255, 255, 0); // set subnet mask
    String currentTime = String(p_tm->tm_mday) + "/" + String(p_tm->tm_mon+1) + "/" + String(p_tm->tm_year+1900) + " ";
    currentTime = currentTime + String(p_tm->tm_hour) + ":" + String(p_tm->tm_min) + ":" + String(p_tm->tm_sec);
    
-   Serial.println("Current Time:" + currentTime);
+  // Serial.println("Current Time:" + currentTime);
    server.send(200, "text/html", currentTime);
   }
 
@@ -286,6 +298,106 @@ bool isTokenValid( String suppliedTotp) {
     //check the supplied OTP against the current secret key
     return ((*endptr == '\0') &&
             (ESP8266TOTP::IsTokenValid(now, data.keyBytes, suppliedOtp)));
+}
+
+/*************************************************************************/
+/*** Methods Handling Auto Solar Tracking ********************************/
+/*************************************************************************/
+void initSolarTracking () {
+  if (sunAutoTrack) { //if sun tracking enabled
+     Serial.println("---- Sun auto track started ---- "); 
+     sameFeedBackNr = 0; 
+     lastFeedBackCount = feedBackCount; 
+    //move panel to starting position, rotate max left (city)
+    turnRight = 0;
+    Serial.println("Motor Left");
+    digitalWrite ( motorDirection, LOW );
+    digitalWrite ( motor, HIGH );
+    Serial.println("Motor Start");
+    time_t now = time(nullptr);
+    setTime(now); 
+    panelMovingAlarm = Alarm.timerRepeat(1, isPanelMoving); // timer for every 15 seconds 
+  }
+}
+
+// check if motor is moving
+void isPanelMoving () { 
+  if (sunAutoTrack) { //if sun tracking enabled
+    if (feedBackCount != desiredPosition) {
+      Serial.println("--- Panel is moving ... ---");  
+      desiredPosition = feedBackCount;
+    } else {
+      Serial.println("--- Panel in initial position ... ---");  
+      Alarm.disable (panelMovingAlarm);
+      Serial.println("Motor Stop");
+      digitalWrite ( motor, LOW ); 
+      calculateSunPosition();
+      sunTrackerAlarm = Alarm.timerRepeat(900, calculateSunPosition); // timer for every 15 minutes 
+    }
+  } else {
+     stopSunAutoTrack();
+  }
+}
+
+/*
+ * calculate sun position and rotate panel
+ */
+void calculateSunPosition() {
+  if (sunAutoTrack) { //if sun tracking enabled
+    //caluclate position based on sunrize and sunset
+//      difftime()
+//      time_t t = time(nullptr);
+//     maxRotation
+     desiredPosition = 105;
+     // start rotation
+     turnRight = 1;
+     digitalWrite ( motorDirection, HIGH );
+     Serial.println("Motor Right");
+     digitalWrite ( motor, HIGH );
+     Serial.println("Motor Start");
+     panelMovingAlarm = Alarm.timerRepeat(1, roateToPosition);
+  } else {
+    stopSunAutoTrack();
+  }
+}
+
+/** 
+ * rotate panel to given position 
+ */
+ void roateToPosition () {
+  if (sunAutoTrack) { //if sun tracking enabled 
+    if (feedBackCount < desiredPosition && sameFeedBackNr < 11) {
+        // we check that the panel is moving otherwise after 10 trials stop the auto tracking
+        if (feedBackCount == lastFeedBackCount) { // if last known position is the same
+          sameFeedBackNr++;
+        } else {
+          sameFeedBackNr = 0;
+        }
+        lastFeedBackCount = feedBackCount;  // last known position
+        Serial.println("--- Panel is moving ... Position: "+ String(feedBackCount) +" ---");  
+    } else if (sameFeedBackNr >= 11) {
+        Serial.println("--- Panel Error not moving!!! Position: "+ String(feedBackCount) +" ---"); 
+        stopSunAutoTrack();
+    } else {
+        Serial.println("--- Panel in sun position ... Position: "+ String(feedBackCount) +" ---");  
+        Alarm.disable (panelMovingAlarm);
+        Serial.println("Motor Stop");
+        digitalWrite ( motor, LOW ); 
+    } 
+  } else {
+      stopSunAutoTrack();
+  }
+}
+
+/** 
+ *  stop sun auto tracking in case of an error
+ */
+void stopSunAutoTrack() {
+  Serial.println("--- Stop sun auto track ... Position: "+ String(feedBackCount) +" ---"); 
+  Alarm.disable (panelMovingAlarm);
+  Alarm.disable (sunTrackerAlarm);
+  Serial.println("Motor Stop");
+  digitalWrite ( motor, LOW );  
 }
 
 String webPage = "";
@@ -457,7 +569,7 @@ void setup(void){
 /*************************************************************************/ 
   time_t now = time(nullptr);
   setTime(now); 
-  Alarm.timerRepeat(15, Repeats); // timer for every 15 seconds  
+  //Alarm.timerRepeat(15, Repeats); // timer for every 15 seconds  
 
 /*************************************************************************/
 /*** Setup TOTP **********************************************************/
