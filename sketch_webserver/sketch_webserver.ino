@@ -442,6 +442,8 @@ void isPanelMoving () {
 void calculateSunPosition() {
   if (sunAutoTrack) { //if sun tracking enabled
     //caluclate position based on sunrize and sunset
+    double daySec = getSecondsOfDayToRefTime(sunrizeTime);
+    Serial.println("Seconds since sunrize time: " + String(daySec));
    // double d = difftime()
 //      difftime()
 //      time_t t = time(nullptr);
@@ -496,6 +498,47 @@ void stopSunAutoTrack() {
   Alarm.disable (sunTrackerAlarm);
   Serial.println("Motor Stop");
   digitalWrite ( motor, LOW );  
+}
+
+double getSecondsOfDayToRefTime(time_t ref_time) {
+   // to get current time 
+   time_t now = time(nullptr);
+   struct tm curentDayTime = *localtime(&now);
+   curentDayTime.tm_hour = curentDayTime.tm_hour+2;
+   
+   struct tm refTime = *localtime(&ref_time); //convert the time to struct tm* 
+
+    String currentTime = String(curentDayTime.tm_mday) + "/" + String(curentDayTime.tm_mon+1) + "/" + String(curentDayTime.tm_year+1900) + " ";
+    currentTime = currentTime + String(curentDayTime.tm_hour) + ":" + String(curentDayTime.tm_min) + ":" + String(curentDayTime.tm_sec); 
+    Serial.println("CurrentDayTime" + currentTime);
+    
+    // show on serial the calculate time
+    String currentTime2 = String(refTime.tm_mday) + "/" + String(refTime.tm_mon+1) + "/" + String(refTime.tm_year+1900) + " ";
+    currentTime2 = currentTime2 + String(refTime.tm_hour) + ":" + String(refTime.tm_min) + ":" + String(refTime.tm_sec); 
+    Serial.println("Sunrize Time" + currentTime2);
+
+  double daySec = 0;
+  int minusMin = 0;
+  int minusHour = 0;
+  
+  if (curentDayTime.tm_sec < refTime.tm_sec) {
+     daySec = curentDayTime.tm_sec - refTime.tm_sec + 60;
+     minusMin = -1;
+  } else {
+    daySec = curentDayTime.tm_sec - refTime.tm_sec;
+  }
+
+  if ((curentDayTime.tm_min - minusMin ) < refTime.tm_min) {
+     daySec = daySec + ( 60 * (curentDayTime.tm_min - minusMin - refTime.tm_min + 60));
+     minusHour = -1;
+  } else {
+    daySec = daySec + ( 60 * (curentDayTime.tm_min - minusMin - refTime.tm_min));
+  }
+
+  daySec = daySec + ( 3600 * (curentDayTime.tm_hour - minusHour  - refTime.tm_hour));
+  
+  return daySec;
+  
 }
 
 String webPage = "";
@@ -661,11 +704,12 @@ void setup(void){
      Alarm.delay(1000); 
   }
   Serial.println("Time response....OK");
+  getSunriseAndSunset();
 
 /*************************************************************************/
 /*** Setup Scheduler ALARMS **********************************************************/
 /*************************************************************************/ 
-getSunriseAndSunset();
+ Alarm.alarmRepeat(8,30,0, getSunriseAndSunset); // every morning get sunrize and sunset
   
 /*************************************************************************/
 /*** Setup Scheduler ALARMS **********************************************************/
