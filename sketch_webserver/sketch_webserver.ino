@@ -14,8 +14,8 @@
 #include "index.h" //Our HTML webpage contents with javascripts
 
 #define LED 2  //On board LED
-#define godeanu_latitude    46.770433              //Aleea Godeanu Cluj cordinates
-#define godeanu_longtitude  23.614970 
+#define godeanu_latitude    46.770080              //Aleea Godeanu Cluj cordinates
+#define godeanu_longtitude  23.615710 
 
 //variables for time
 int timezone = 0; // 2*3600;
@@ -62,6 +62,7 @@ bool ota_flag = false;
 // variables for sun auto tracking
 bool sunAutoTrack = false;
 bool initSunAutoTrack = false;
+bool checkTotp = false;
 
 // Motor variables
 int turnRight = 0;
@@ -207,10 +208,14 @@ IPAddress subnet(255, 255, 255, 0); // set subnet mask
   /** Sunrise and sunset **/
   void getSunriseAndSunset() {
 
+     time_t now = time(nullptr);
+     struct tm* currentTime = localtime(&now);
+     String currentTimeString = String(currentTime->tm_year+1900) + "-" + String(currentTime->tm_mon+1) + "-" + String(currentTime->tm_mday);
+    
      if (WiFi.status() == WL_CONNECTED) {
         HTTPClient http;  //Object of class HTTPClient
       
-        http.begin("http://api.sunrise-sunset.org/json?lat="+String(godeanu_latitude)+"&lng="+String(godeanu_longtitude)+"&date=2018-10-22");
+        http.begin("http://api.sunrise-sunset.org/json?lat="+String(godeanu_latitude)+"&lng="+String(godeanu_longtitude)+"&date="+currentTimeString);
         // add curent date and UTC + 3
         
         int httpCode = http.GET();
@@ -226,30 +231,80 @@ IPAddress subnet(255, 255, 255, 0); // set subnet mask
           JsonObject& results = root["results"];
           const char* results_sunrise = results["sunrise"]; // "6:31:05 AM"
           const char* results_sunset = results["sunset"]; // "5:33:22 PM"
-          const char* results_solar_noon = results["solar_noon"]; // "12:02:14 PM"
           const char* results_day_length = results["day_length"]; // "11:02:17"
-          const char* results_civil_twilight_begin = results["civil_twilight_begin"]; // "6:04:53 AM"
-          const char* results_civil_twilight_end = results["civil_twilight_end"]; // "5:59:34 PM"
-          const char* results_nautical_twilight_begin = results["nautical_twilight_begin"]; // "5:34:43 AM"
-          const char* results_nautical_twilight_end = results["nautical_twilight_end"]; // "6:29:44 PM"
-          const char* results_astronomical_twilight_begin = results["astronomical_twilight_begin"]; // "5:04:44 AM"
-          const char* results_astronomical_twilight_end = results["astronomical_twilight_end"]; // "6:59:43 PM"
           
           const char* status = root["status"]; // "OK"
 
             // Output to serial monitor
-            Serial.print("Sunrise:");
+            Serial.println();
+            Serial.println("Sunrise:");
             Serial.println(results_sunrise);
             Serial.print("Sunset:");
             Serial.println(results_sunset);
             Serial.print("Day length:"); 
             Serial.println(results_day_length);
 
+            char* copy = strdup(results_sunrise);
+            char* sunrizeHours = strtok(copy, " :");
+            time_t sunrizeTime2 = convertToTimeT(sunrizeHours, copy, "Sunrize hour:");
+            free(copy);
+//            copy = strdup(results_sunset);
+//            char** sunsetHours = strtok(copy, ':');
+//            free(copy);
+//            copy = strdup(results_day_length);
+//            char** dayLength = strtok(copy, ':');
+
+           
+
              server.send(200, "text/html", results_sunrise);
         }
         http.end();   //Close connection
       }
   }
+
+/**
+ *  convert the given token char to time_t
+ *  get current time and update the hour, minutes and seconds
+ */
+   time_t convertToTimeT(char* token, char* s, char* type) {
+
+    // to get current time 
+    time_t now = time(nullptr);
+    struct tm* token_time = localtime(&now);
+    int i = 0;
+    
+    Serial.println();
+    while( token != NULL ) {
+      if (i==0) {
+        token_time->tm_hour = atoi(token) + 2; // where 2 is day light savings make constant
+        i++;
+      } else if (i==1) {
+        token_time->tm_min = atoi(token);
+        i++;
+      } else if (i==2) {
+         token_time->tm_sec = atoi(token);
+         i++;
+      } else if (i==3) {
+        if (token == "PM") {
+          token_time->tm_hour = token_time->tm_hour + 12;
+        }
+        i++;
+      }
+      Serial.print(token );
+      token = strtok(NULL, " :");
+   }
+    Serial.println();
+    time_t calc_Time = mktime(token_time); // create the new time
+    token_time = localtime(&calc_Time); //convert the new time to struct tm* 
+
+    // show on serial the calculate time
+    String currentTime = String(token_time->tm_mday) + "/" + String(token_time->tm_mon+1) + "/" + String(token_time->tm_year+1900) + " ";
+    currentTime = currentTime + String(token_time->tm_hour) + ":" + String(token_time->tm_min) + ":" + String(token_time->tm_sec); 
+    Serial.println(type + currentTime);
+
+    return calc_Time;
+  }
+
 
 /** Arduino OTA Update **/
   void startArduinoOta () {
@@ -292,12 +347,14 @@ void printDigits(int digits)
  * matches the current otp calculated from the current epoch offset and secret key bytes
  */
 bool isTokenValid( String suppliedTotp) {
-    char *endptr;
-    int suppliedOtp = strtoul(suppliedTotp.c_str(), &endptr, 10);
-    time_t now = time(nullptr);
-    //check the supplied OTP against the current secret key
-    return ((*endptr == '\0') &&
-            (ESP8266TOTP::IsTokenValid(now, data.keyBytes, suppliedOtp)));
+    if (checkTotp) {
+      char *endptr;
+      int suppliedOtp = strtoul(suppliedTotp.c_str(), &endptr, 10);
+      time_t now = time(nullptr);
+      //check the supplied OTP against the current secret key
+      return ((*endptr == '\0') &&
+              (ESP8266TOTP::IsTokenValid(now, data.keyBytes, suppliedOtp)));
+    } else return true;
 }
 
 /*************************************************************************/
@@ -341,11 +398,12 @@ void isPanelMoving () {
 }
 
 /*
- * calculate sun position and rotate panel
+ * calculate sun position and rotate panel called every 15 minutes
  */
 void calculateSunPosition() {
   if (sunAutoTrack) { //if sun tracking enabled
     //caluclate position based on sunrize and sunset
+   // double d = difftime()
 //      difftime()
 //      time_t t = time(nullptr);
 //     maxRotation
@@ -564,6 +622,11 @@ void setup(void){
      Alarm.delay(1000); 
   }
   Serial.println("Time response....OK");
+
+/*************************************************************************/
+/*** Setup Scheduler ALARMS **********************************************************/
+/*************************************************************************/ 
+getSunriseAndSunset();
   
 /*************************************************************************/
 /*** Setup Scheduler ALARMS **********************************************************/
