@@ -1,3 +1,6 @@
+#include <Boards.h>
+#include <Firmata.h>
+
 #include <ESP8266WiFi.h>
 #include <WiFiClientSecure.h>
 #include <ESP8266WebServer.h>
@@ -21,6 +24,11 @@
 int timezone = 0; // 2*3600;
 int dst = 0; //day light saving
 time_t ntp_time = 0;
+
+// sunrize/sunset/daylightSeconds
+time_t sunrizeTime = 0;
+time_t sunsetTime = 0 ;
+double dayLightSec = 0;
 
 //TOTP DATA
 totpData data;
@@ -246,17 +254,18 @@ IPAddress subnet(255, 255, 255, 0); // set subnet mask
 
             char* copy = strdup(results_sunrise);
             char* sunrizeHours = strtok(copy, " :");
-            time_t sunrizeTime2 = convertToTimeT(sunrizeHours, copy, "Sunrize hour:");
+            sunrizeTime = convertToTimeT(sunrizeHours, "Sunrize hour:");
             free(copy);
-//            copy = strdup(results_sunset);
-//            char** sunsetHours = strtok(copy, ':');
-//            free(copy);
-//            copy = strdup(results_day_length);
-//            char** dayLength = strtok(copy, ':');
-
-           
-
-             server.send(200, "text/html", results_sunrise);
+            copy = strdup(results_sunset);
+            char* sunsetHours = strtok(copy, " :");
+            sunsetTime = convertToTimeT(sunrizeHours, "Sunset hour:");
+            free(copy);
+            copy = strdup(results_day_length);
+            char* dayLength = strtok(copy, " :");
+            dayLightSec = convertDayLightToSeconds(sunrizeHours, "Day light seconds:");
+            free(copy);
+            
+            server.send(200, "text/html", results_sunrise);
         }
         http.end();   //Close connection
       }
@@ -266,7 +275,7 @@ IPAddress subnet(255, 255, 255, 0); // set subnet mask
  *  convert the given token char to time_t
  *  get current time and update the hour, minutes and seconds
  */
-   time_t convertToTimeT(char* token, char* s, char* type) {
+   time_t convertToTimeT(char* token, char* type) {
 
     // to get current time 
     time_t now = time(nullptr);
@@ -285,7 +294,7 @@ IPAddress subnet(255, 255, 255, 0); // set subnet mask
          token_time->tm_sec = atoi(token);
          i++;
       } else if (i==3) {
-        if (token == "PM") {
+        if (strcmp(token, "PM") == 0) {
           token_time->tm_hour = token_time->tm_hour + 12;
         }
         i++;
@@ -303,6 +312,36 @@ IPAddress subnet(255, 255, 255, 0); // set subnet mask
     Serial.println(type + currentTime);
 
     return calc_Time;
+  }
+
+  /**
+   *  convert the given token char to nr of seconds of daylight
+   *  get current daylight in nr seconds
+ */
+   double convertDayLightToSeconds(char* token, char* type) {
+
+    // to get current time 
+    double dayLightSec = 0;
+    int i = 0;
+    Serial.println();
+    while( token != NULL ) {
+      if (i==0) {
+        dayLightSec = 3600 * atoi(token); // days 
+        i++;
+      } else if (i==1) {
+       dayLightSec = dayLightSec + (60 * atoi(token)); // minutes
+        i++;
+      } else if (i==2) {
+         dayLightSec = dayLightSec + atoi(token); // seconds
+         i++;
+      } 
+      Serial.print(token );
+      token = strtok(NULL, " :");
+   }
+    Serial.println();
+    Serial.println(type + String(dayLightSec));
+
+    return dayLightSec;
   }
 
 
