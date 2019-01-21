@@ -412,6 +412,7 @@ void initSolarTracking () {
     Serial.println("Motor Start");
     time_t now = time(nullptr);
     setTime(now); 
+    Alarm.disable (panelMovingAlarm);
     panelMovingAlarm = Alarm.timerRepeat(2, isPanelMoving); // timer for every 15 seconds 
   }
 }
@@ -429,7 +430,8 @@ void isPanelMoving () {
       digitalWrite ( motor, LOW ); 
       feedBackCount = 0;
       calculateSunPosition();
-      sunTrackerAlarm = Alarm.timerRepeat(900, calculateSunPosition); // timer for every 15 minutes 
+      //sunTrackerAlarm = Alarm.timerRepeat(900, calculateSunPosition); // timer for every 15 minutes 
+      sunTrackerAlarm = Alarm.timerRepeat(120, calculateSunPosition); // timer for every 15 minutes 
     }
   } else {
      stopSunAutoTrack();
@@ -441,23 +443,40 @@ void isPanelMoving () {
  */
 void calculateSunPosition() {
   if (sunAutoTrack) { //if sun tracking enabled
-    //caluclate position based on sunrize and sunset
-    double daySec = getSecondsOfDayToRefTime(sunrizeTime);
-    Serial.println("Seconds since sunrize time: " + String(daySec));
-   // double d = difftime()
-//      difftime()
-//      time_t t = time(nullptr);
-//     maxRotation
-     desiredPosition = 45;
-     // start rotation
-     turnRight = 1;
-     digitalWrite ( motorDirection, HIGH );
-     Serial.println("Motor Right");
-     digitalWrite ( motor, HIGH );
-     Serial.println("Motor Start");
-     panelMovingAlarm = Alarm.timerRepeat(1, roateToPosition);
+      //caluclate position based on sunrize and sunset
+      double currentDaySec = getSecondsOfDayToRefTime(sunrizeTime);
+      Serial.println("Seconds since sunrize time: " + String(currentDaySec));
+      Serial.println("Max daylight sec: " + String(dayLightSec));
+      if (currentDaySec > 0 && dayLightSec > 0 && currentDaySec < dayLightSec) {
+           desiredPosition = maxRotation - ((maxRotation*currentDaySec)/dayLightSec);
+           Serial.println("Panel desired position: " + String(desiredPosition));
+           Serial.println("Motor Moving ? : " + String(motor));
+           if (desiredPosition > 0 && desiredPosition <maxRotation && motor != HIGH) {  
+               if (desiredPosition > feedBackCount) {
+                 // start rotation right
+                 turnRight = 1;
+                 digitalWrite ( motorDirection, HIGH );
+                 Serial.println("Motor Right");
+                 digitalWrite ( motor, HIGH );
+                 Serial.println("Motor Start");
+                 Alarm.disable (panelMovingAlarm);
+                 panelMovingAlarm = Alarm.timerRepeat(1, roateToPosition);
+               } else {
+                  // start rotation left
+                  turnRight = 0;
+                  Serial.println("Motor Left");
+                  digitalWrite ( motorDirection, LOW );
+                  digitalWrite ( motor, HIGH );
+                  Serial.println("Motor Start");
+                  Alarm.disable (panelMovingAlarm);
+                 panelMovingAlarm = Alarm.timerRepeat(1, roateToPosition);
+               }
+           }
+        } else {
+          stopSunAutoTrack();
+        }
   } else {
-    stopSunAutoTrack();
+      stopSunAutoTrack();
   }
 }
 
@@ -483,7 +502,14 @@ void calculateSunPosition() {
         Alarm.disable (panelMovingAlarm);
         Serial.println("Motor Stop");
         digitalWrite ( motor, LOW ); 
-    } 
+    }
+    // remove this only for simulation
+    if (turnRight == 0) {
+       feedBackCount = feedBackCount-5;
+    } else {
+       feedBackCount = feedBackCount+5;  // remove this only for simulation
+    }
+    /// end remove this only for simulation
   } else {
       stopSunAutoTrack();
   }
@@ -709,7 +735,7 @@ void setup(void){
 /*************************************************************************/
 /*** Setup Scheduler ALARMS **********************************************************/
 /*************************************************************************/ 
- Alarm.alarmRepeat(8,30,0, getSunriseAndSunset); // every morning get sunrize and sunset
+ Alarm.alarmRepeat(6,2,0, getSunriseAndSunset); // every morning get sunrize and sunset
   
 /*************************************************************************/
 /*** Setup Scheduler ALARMS **********************************************************/
