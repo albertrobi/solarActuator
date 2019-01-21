@@ -23,6 +23,7 @@
 //variables for time
 int timezone = 0; // 2*3600;
 int dst = 0; //day light saving
+int romaniaTimeZone = 2; // UTC +2 romania timezont 
 time_t ntp_time = 0;
 
 // sunrize/sunset/daylightSeconds
@@ -71,6 +72,7 @@ bool ota_flag = false;
 bool sunAutoTrack = false;
 bool initSunAutoTrack = false;
 bool checkTotp = false;
+bool panelAtInitialPos = false;
 
 // Motor variables
 int turnRight = 0;
@@ -285,7 +287,7 @@ IPAddress subnet(255, 255, 255, 0); // set subnet mask
     Serial.println();
     while( token != NULL ) {
       if (i==0) {
-        token_time->tm_hour = atoi(token) + 2; // where 2 is day light savings make constant
+        token_time->tm_hour = atoi(token) + romaniaTimeZone;
         i++;
       } else if (i==1) {
         token_time->tm_min = atoi(token);
@@ -412,24 +414,28 @@ void initSolarTracking () {
     Serial.println("Motor Start");
     time_t now = time(nullptr);
     setTime(now); 
+    Alarm.disable (sunTrackerAlarm);
     Alarm.disable (panelMovingAlarm);
-    panelMovingAlarm = Alarm.timerRepeat(2, isPanelMoving); // timer for every 15 seconds 
+    panelMovingAlarm = Alarm.timerRepeat(2, setPanelToInitialPosition); // timer for every 15 seconds 
   }
 }
 
 // check if motor is moving
-void isPanelMoving () { 
+void setPanelToInitialPosition () { 
   if (sunAutoTrack) { //if sun tracking enabled
     if (feedBackCount != desiredPosition) {
       Serial.println("--- Panel is moving ... ---");  
       desiredPosition = feedBackCount;
+      panelAtInitialPos = false;
     } else {
-      Serial.println("--- Panel in initial position ... ---");  
+      Serial.println("--- Panel in initial position ... ---");
+      panelAtInitialPos = true;  
       Alarm.disable (panelMovingAlarm);
       Serial.println("Motor Stop");
       digitalWrite ( motor, LOW ); 
       feedBackCount = 0;
       calculateSunPosition();
+      Alarm.disable (sunTrackerAlarm);
       //sunTrackerAlarm = Alarm.timerRepeat(900, calculateSunPosition); // timer for every 15 minutes 
       sunTrackerAlarm = Alarm.timerRepeat(120, calculateSunPosition); // timer for every 15 minutes 
     }
@@ -445,13 +451,14 @@ void calculateSunPosition() {
   if (sunAutoTrack) { //if sun tracking enabled
       //caluclate position based on sunrize and sunset
       double currentDaySec = getSecondsOfDayToRefTime(sunrizeTime);
-      Serial.println("Seconds since sunrize time: " + String(currentDaySec));
+      Serial.println("Current day seconds since sunrize time: " + String(currentDaySec));
       Serial.println("Max daylight sec: " + String(dayLightSec));
+      Serial.println("Panel at initial position: " + String(panelAtInitialPos));
       if (currentDaySec > 0 && dayLightSec > 0 && currentDaySec < dayLightSec) {
            desiredPosition = maxRotation - ((maxRotation*currentDaySec)/dayLightSec);
            Serial.println("Panel desired position: " + String(desiredPosition));
            Serial.println("Motor Moving ? : " + String(motor));
-           if (desiredPosition > 0 && desiredPosition <maxRotation && motor != HIGH) {  
+           if (desiredPosition > 0 && desiredPosition < maxRotation && motor != HIGH) {  
                if (desiredPosition > feedBackCount) {
                  // start rotation right
                  turnRight = 1;
@@ -461,6 +468,7 @@ void calculateSunPosition() {
                  Serial.println("Motor Start");
                  Alarm.disable (panelMovingAlarm);
                  panelMovingAlarm = Alarm.timerRepeat(1, roateToPosition);
+                 panelAtInitialPos = false;
                } else {
                   // start rotation left
                   turnRight = 0;
@@ -469,11 +477,20 @@ void calculateSunPosition() {
                   digitalWrite ( motor, HIGH );
                   Serial.println("Motor Start");
                   Alarm.disable (panelMovingAlarm);
-                 panelMovingAlarm = Alarm.timerRepeat(1, roateToPosition);
+                  panelMovingAlarm = Alarm.timerRepeat(1, roateToPosition);
+                  panelAtInitialPos = false;
                }
-           }
-        } else {
-          stopSunAutoTrack();
+           }  
+        } else if (currentDaySec > (dayLightSec + 500) && !panelAtInitialPos) { // if sunny day is over move panel back to main position / city position
+            // start rotation left
+            //move panel to starting position, rotate max left (city)
+            turnRight = 0;
+            Serial.println("Motor Left");
+            digitalWrite ( motorDirection, LOW );
+            digitalWrite ( motor, HIGH );
+            Serial.println("Motor Start");
+            Alarm.disable (panelMovingAlarm);
+            panelMovingAlarm = Alarm.timerRepeat(2, setPanelToInitialPosition); // timer for every 15 seconds 
         }
   } else {
       stopSunAutoTrack();
@@ -493,7 +510,8 @@ void calculateSunPosition() {
           sameFeedBackNr = 0;
         }
         lastFeedBackCount = feedBackCount;  // last known position
-        Serial.println("--- Panel is moving ... Position: "+ String(feedBackCount) +" ---");  
+        Serial.println("--- Panel is moving ... Position: "+ String(feedBackCount) +" ---"); 
+        panelAtInitialPos = false; 
     } else if (sameFeedBackNr >= 11) {
         Serial.println("--- Panel Error not moving!!! Position: "+ String(feedBackCount) +" ---"); 
         stopSunAutoTrack();
@@ -530,18 +548,18 @@ double getSecondsOfDayToRefTime(time_t ref_time) {
    // to get current time 
    time_t now = time(nullptr);
    struct tm curentDayTime = *localtime(&now);
-   curentDayTime.tm_hour = curentDayTime.tm_hour+2;
+   curentDayTime.tm_hour = curentDayTime.tm_hour + romaniaTimeZone;
    
    struct tm refTime = *localtime(&ref_time); //convert the time to struct tm* 
 
     String currentTime = String(curentDayTime.tm_mday) + "/" + String(curentDayTime.tm_mon+1) + "/" + String(curentDayTime.tm_year+1900) + " ";
     currentTime = currentTime + String(curentDayTime.tm_hour) + ":" + String(curentDayTime.tm_min) + ":" + String(curentDayTime.tm_sec); 
-    Serial.println("CurrentDayTime" + currentTime);
+    Serial.println("Current Day Time: " + currentTime);
     
     // show on serial the calculate time
     String currentTime2 = String(refTime.tm_mday) + "/" + String(refTime.tm_mon+1) + "/" + String(refTime.tm_year+1900) + " ";
     currentTime2 = currentTime2 + String(refTime.tm_hour) + ":" + String(refTime.tm_min) + ":" + String(refTime.tm_sec); 
-    Serial.println("Sunrize Time" + currentTime2);
+    Serial.println("Sunrize Time: " + currentTime2);
 
   double daySec = 0;
   int minusMin = 0;
@@ -735,7 +753,7 @@ void setup(void){
 /*************************************************************************/
 /*** Setup Scheduler ALARMS **********************************************************/
 /*************************************************************************/ 
- Alarm.alarmRepeat(6,2,0, getSunriseAndSunset); // every morning get sunrize and sunset
+ Alarm.alarmRepeat(7-romaniaTimeZone,2,0, getSunriseAndSunset); // every morning get sunrize and sunset, hour -2 since we are UTC 
   
 /*************************************************************************/
 /*** Setup Scheduler ALARMS **********************************************************/
