@@ -45,6 +45,7 @@ MDNSResponder mdns;
 const char* ssid = "BalazsEsAlbert";
 const char* password = "emeseesrobi87";
 
+
 ESP8266WebServer server(80); //Server on port 80
 
 //===============================================================
@@ -207,11 +208,14 @@ void ICACHE_RAM_ATTR flowOneInterupt()
 /* Get Date and Time*/
 void getDateAndTime()
 {
+  // to get current time
   time_t now = time(nullptr);
-  struct tm* p_tm = localtime(&now);
-  String currentTime = String(p_tm->tm_mday) + "/" + String(p_tm->tm_mon + 1) + "/" + String(p_tm->tm_year + 1900) + " ";
-  currentTime = currentTime + String(p_tm->tm_hour) + ":" + String(p_tm->tm_min) + ":" + String(p_tm->tm_sec);
+  struct tm curentDayTime = *localtime(&now);
+  curentDayTime.tm_hour = curentDayTime.tm_hour + romaniaTimeZone;
 
+  String currentTime = String(curentDayTime.tm_mday) + "/" + String(curentDayTime.tm_mon + 1) + "/" + String(curentDayTime.tm_year + 1900) + " ";
+  currentTime = currentTime + String(curentDayTime.tm_hour) + ":" + String(curentDayTime.tm_min) + ":" + String(curentDayTime.tm_sec);
+  
   // Serial.println("Current Time:" + currentTime);
   server.send(200, "text/html", currentTime);
 }
@@ -269,7 +273,11 @@ void getSunriseAndSunset() {
       dayLightSec = convertDayLightToSeconds(sunrizeHours, "Day light seconds:");
       free(copy);
 
-      server.send(200, "text/html", results_sunrise);
+      struct tm sunrizeTimeStruct = *localtime(&sunrizeTime); //convert the time to struct tm*
+      // show on serial the calculate time
+      String sunrizeCalcTime = String(sunrizeTimeStruct.tm_mday) + "/" + String(sunrizeTimeStruct.tm_mon + 1) + "/" + String(sunrizeTimeStruct.tm_year + 1900) + " ";
+      sunrizeCalcTime = sunrizeCalcTime + String(sunrizeTimeStruct.tm_hour) + ":" + String(sunrizeTimeStruct.tm_min) + ":" + String(sunrizeTimeStruct.tm_sec);
+      server.send(200, "text/html", sunrizeCalcTime);
     }
     http.end();   //Close connection
   }
@@ -531,11 +539,11 @@ void roateToPosition () {
       digitalWrite ( motor, LOW );
     }
     // remove this only for simulation
-    if (turnRight == 0) {
-      feedBackCount = feedBackCount - 5;
-    } else {
-      feedBackCount = feedBackCount + 5; // remove this only for simulation
-    }
+//    if (turnRight == 0) {
+//      feedBackCount = feedBackCount - 1;
+//    } else {
+//      feedBackCount = feedBackCount + 1; // remove this only for simulation
+//    }
     /// end remove this only for simulation
   } else {
     stopSunAutoTrack();
@@ -766,7 +774,7 @@ void setup(void) {
   setTime(now);
   getSunriseAndSunset();
 
-  everyDaySunrizeAlarm = Alarm.alarmRepeat(7 - romaniaTimeZone, 0, 0, getSunriseAndSunset); // every morning get sunrize and sunset, hour -2 since we are UTC
+  everyDaySunrizeAlarm = Alarm.alarmRepeat(7 - romaniaTimeZone, 45, 0, getSunriseAndSunset); // every morning get sunrize and sunset, hour -2 since we are UTC
 
   /*************************************************************************/
   /*** Setup TOTP **********************************************************/
