@@ -1,7 +1,7 @@
 const char MAIN_page[] PROGMEM = R"=====(
 <!DOCTYPE html>
 <html>
-<body>
+<body onload="getStatusData() ;">
 
 <div id="demo">
 <h1>The ESP8266 NodeMCU Solar Motor controller</h1>
@@ -132,6 +132,35 @@ function resetFeedBackCounter () {
     }
   };
   xhttp.open("GET", "resetFeedBackCounter?TOTPKEY="+password, true);
+  xhttp.send();
+}
+
+function getStatusData() {
+  var password =  document.getElementById("password").value; 
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      var statusData = JSON.parse(this.responseText);
+      if (statusData.motorDirection == 1) {
+          document.getElementById("motorTurningDirection").innerHTML = "Right"
+          document.getElementById("motorTurningDirection").style.color = "blue";
+      } else {
+         document.getElementById("motorTurningDirection").innerHTML = "Left"
+         document.getElementById("motorTurningDirection").style.color = "blue";
+      }
+      if (statusData.motorStarted == 1) {
+          document.getElementById("motorState").innerHTML = "Started"
+          document.getElementById("motorState").style.color = "blue";
+      } else {
+         document.getElementById("motorState").innerHTML = "Stoped"
+         document.getElementById("motorState").style.color = "blue";
+      }
+    } else if (this.status == 400) {
+      document.getElementById("motorTurningDirection").style.color = "red";
+      document.getElementById("motorState").style.color = "red";
+    }
+  };
+  xhttp.open("GET", "getStatusData?TOTPKEY="+password, true);
   xhttp.send();
 }
 

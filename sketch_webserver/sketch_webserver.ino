@@ -190,6 +190,22 @@ void handleMotorTurnRight() {
   }
 }
 
+void handleGetStatusData() {
+  String totpKey = server.arg("TOTPKEY");
+  if (isTokenValid(totpKey)) {
+    StaticJsonBuffer<300> JSONbuffer;
+    JsonObject& JSONencoder = JSONbuffer.createObject();
+    JSONencoder["motorDirection"] = digitalRead(motorDirection);
+    JSONencoder["motorStarted"] = digitalRead(motor);
+
+    String json;
+    JSONencoder.prettyPrintTo(json);
+  
+    server.send(200, "text/json", json);
+    
+  }
+}
+
 /*************************************************************************/
 /*** Methods *************************************************************/
 /*************************************************************************/
@@ -781,6 +797,7 @@ void setup(void) {
   server.on("/getDateAndTime", getDateAndTime);
   server.on("/getSunriseAndSunset", getSunriseAndSunset);
   server.on("/startArduinoOta", startArduinoOta);
+  server.on("/getStatusData", handleGetStatusData);
 
   server.begin();
   Serial.println("HTTP server started");
