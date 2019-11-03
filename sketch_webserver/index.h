@@ -1,7 +1,7 @@
 const char MAIN_page[] PROGMEM = R"=====(
 <!DOCTYPE html>
 <html>
-<body onload="getStatusData() ;">
+<body onload="getStatusData();">
 
 <div id="demo">
 <h1>The ESP8266 NodeMCU Solar Motor controller</h1>
@@ -17,6 +17,7 @@ const char MAIN_page[] PROGMEM = R"=====(
 
 <div>
   Current time is : <span id="currentDateTime">0</span><br>
+  Time zone GMT+: <span id="timeZone">0</span><br>
   Install new Software : 
   <button type="button" onclick="startArduinoOta()">Start OTA</button>
 <div>
@@ -155,6 +156,8 @@ function getStatusData() {
          document.getElementById("motorState").innerHTML = "Stoped"
          document.getElementById("motorState").style.color = "blue";
       }
+      //timeZone
+       document.getElementById("timeZone").innerHTML = ""+statusData.timeZone;
     } else if (this.status == 400) {
       document.getElementById("motorTurningDirection").style.color = "red";
       document.getElementById("motorState").style.color = "red";
@@ -162,6 +165,11 @@ function getStatusData() {
   };
   xhttp.open("GET", "getStatusData?TOTPKEY="+password, true);
   xhttp.send();
+
+  // get some relevant data
+  getCurrentDateAndTime(); 
+  getSensorFeedBackData();
+  getSunriseAndSunset();
 }
 
 

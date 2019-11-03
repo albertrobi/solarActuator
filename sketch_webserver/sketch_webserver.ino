@@ -23,7 +23,7 @@
 //variables for time
 int timezone = 0; // 2*3600;
 int dst = 0; //day light saving
-int romaniaTimeZone = 3; // UTC +2 romania timezont
+int romaniaTimeZone = 2; // UTC +2 romania timezont
 time_t ntp_time = 0;
 
 // sunrize/sunset/daylightSeconds
@@ -197,6 +197,7 @@ void handleGetStatusData() {
     JsonObject& JSONencoder = JSONbuffer.createObject();
     JSONencoder["motorDirection"] = digitalRead(motorDirection);
     JSONencoder["motorStarted"] = digitalRead(motor);
+    JSONencoder["timeZone"] = romaniaTimeZone;
 
     String json;
     JSONencoder.prettyPrintTo(json);
