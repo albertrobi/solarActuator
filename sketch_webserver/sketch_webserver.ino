@@ -93,6 +93,7 @@ const int motor = D2;
 const int keepOnHighD3 = D3;
 const int keepOnHighD4 = D4;
 const int readFeedBackD6 = D6;
+const int magnet = D7;
 
 // config static IP
 IPAddress ip(192, 168, 0, 155); // where 155 is the desired IP Address
@@ -143,6 +144,7 @@ void startAutoSunTrack() {
 void handleMotorStart() {
   String totpKey = server.arg("TOTPKEY");
   if (isTokenValid(totpKey)) {
+    handleMagnetDeactivate();
     digitalWrite ( motor, HIGH );
     Serial.println("Motor Start");
     server.send(200, "text/html", "Started");
@@ -190,6 +192,18 @@ void handleMotorTurnRight() {
   }
 }
 
+void handleMagnetActivate() {
+    digitalWrite ( magnet, HIGH );
+    Serial.println("Magnet Activated");
+    server.send(200, "text/html", "Actived");
+}
+
+void handleMagnetDeactivate() {
+    digitalWrite ( magnet, LOW );
+    Serial.println("Magnet Deactivated");
+    server.send(200, "text/html", "Deactivate");
+}
+
 void handleGetStatusData() {
   String totpKey = server.arg("TOTPKEY");
   if (isTokenValid(totpKey)) {
@@ -198,6 +212,7 @@ void handleGetStatusData() {
     JSONencoder["motorDirection"] = digitalRead(motorDirection);
     JSONencoder["motorStarted"] = digitalRead(motor);
     JSONencoder["timeZone"] = romaniaTimeZone;
+     JSONencoder["magnetActive"] = digitalRead(magnet);
 
     String json;
     JSONencoder.prettyPrintTo(json);
@@ -440,6 +455,7 @@ void initSolarTracking () {
     sameFeedBackNr = 0;
     lastFeedBackCount = feedBackCount;
     //move panel to starting position, rotate max left (city)
+    handleMagnetDeactivate();
     turnRight = 0;
     Serial.println("Motor Left");
     digitalWrite ( motorDirection, LOW );
@@ -506,6 +522,7 @@ void calculateSunPosition() {
         if (desiredPosition > feedBackCount) {
            Alarm.disable (panelMovingAlarm);
           // start rotation right
+          handleMagnetDeactivate();
           turnRight = 1;
           digitalWrite ( motorDirection, HIGH );
           Serial.println("Motor Right");
@@ -520,6 +537,7 @@ void calculateSunPosition() {
         } else if (desiredPosition < feedBackCount && feedBackCount < maxRotation) {
           Alarm.disable (panelMovingAlarm);
           // start rotation left (city)
+          handleMagnetDeactivate();
           turnRight = 0;
           Serial.println("Motor Left");
           digitalWrite ( motorDirection, LOW );
@@ -541,6 +559,7 @@ void calculateSunPosition() {
       //move panel to starting position, rotate max left (city)
       Alarm.disable (panelMovingAlarm);
       Serial.println("Day end move panel to starting position, feedBackCount: " + String(feedBackCount));
+      handleMagnetDeactivate();
       turnRight = 0;
       Serial.println("Motor Left");
       digitalWrite ( motorDirection, LOW );
@@ -661,12 +680,13 @@ void setup(void) {
   pinMode ( motor, OUTPUT );
   pinMode ( keepOnHighD3, OUTPUT );
   pinMode ( keepOnHighD4, OUTPUT );
-  pinMode ( keepOnHighD4, OUTPUT );
+  pinMode ( magnet, OUTPUT );
 
   digitalWrite ( motorDirection, LOW );
   digitalWrite ( motor, LOW );
   digitalWrite ( keepOnHighD3, HIGH );
   digitalWrite ( keepOnHighD4, HIGH );
+  digitalWrite ( magnet, LOW );
 
   Serial.begin(115200);
   Serial.println("Booting");
@@ -799,6 +819,8 @@ void setup(void) {
   server.on("/getSunriseAndSunset", getSunriseAndSunset);
   server.on("/startArduinoOta", startArduinoOta);
   server.on("/getStatusData", handleGetStatusData);
+  server.on("/magnetActivate", handleMagnetActivate);
+  server.on("/magnetDeactivate", handleMagnetDeactivate);
 
   server.begin();
   Serial.println("HTTP server started");

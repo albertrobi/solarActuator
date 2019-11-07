@@ -44,6 +44,11 @@ const char MAIN_page[] PROGMEM = R"=====(
 	<button type="button" onclick="sendMotorStart()">Motor Start</button>
 	<button type="button" onclick="sendMotorStop()">Motor Stop</button><BR>
 <div>
+<div>
+  Magnet State :  <span id="magnetState">Actived</span>
+  <button type="button" onclick="sendMagnetActivate()">Magnet Activate</button>
+  <button type="button" onclick="sendMagnetDeactivate()">Magnet Deactivate</button><BR>
+<div>
 
 <script>
 function startAutoSunTrack() {
@@ -121,6 +126,36 @@ function motorTurnRight() {
   xhttp.send();
 }
 
+function sendMagnetActivate() {
+  var password =  document.getElementById("password").value; 
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+     if (this.readyState == 4 && this.status == 200) {
+      document.getElementById("magnetState").innerHTML = this.responseText;
+      document.getElementById("magnetState").style.color = "blue";
+    } else if (this.status == 400) {
+      document.getElementById("magnetState").style.color = "red";
+    }
+  };
+  xhttp.open("GET", "magnetActivate?TOTPKEY="+password, true);
+  xhttp.send();
+}
+
+function sendMagnetDeactivate() {
+  var password =  document.getElementById("password").value; 
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+     if (this.readyState == 4 && this.status == 200) {
+      document.getElementById("magnetState").innerHTML = this.responseText;
+      document.getElementById("magnetState").style.color = "blue";
+    } else if (this.status == 400) {
+      document.getElementById("magnetState").style.color = "red";
+    }
+  };
+  xhttp.open("GET", "magnetDeactivate?TOTPKEY="+password, true);
+  xhttp.send();
+}
+
 function resetFeedBackCounter () {
   var password =  document.getElementById("password").value;
   var xhttp = new XMLHttpRequest();
@@ -155,6 +190,13 @@ function getStatusData() {
       } else {
          document.getElementById("motorState").innerHTML = "Stoped"
          document.getElementById("motorState").style.color = "blue";
+      }
+      if (statusData.magnetActive == 1) {
+         document.getElementById("magnetState").innerHTML = "Actived";
+         document.getElementById("magnetState").style.color = "blue";
+      } else {
+         document.getElementById("magnetState").innerHTML = "Deactivated";
+         document.getElementById("magnetState").style.color = "blue";
       }
       //timeZone
        document.getElementById("timeZone").innerHTML = ""+statusData.timeZone;
