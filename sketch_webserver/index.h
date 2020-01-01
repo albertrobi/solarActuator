@@ -17,7 +17,10 @@ const char MAIN_page[] PROGMEM = R"=====(
 
 <div>
   Current time is : <span id="currentDateTime">0</span><br>
-  Time zone GMT+: <span id="timeZone">0</span><br>
+  Time zone GMT+: <span id="timeZone">0</span> 
+  <button type="button" onclick="setCustomDateTimeAdd()">Increase Day Time +2 </button> 
+  <button type="button" onclick="setCustomDateTimeSub()">Decrease Day Time -2 </button>
+  <br> 
   Install new Software : 
   <button type="button" onclick="startArduinoOta()">Start OTA</button>
 <div>
@@ -198,6 +201,14 @@ function getStatusData() {
          document.getElementById("magnetState").innerHTML = "Deactivated";
          document.getElementById("magnetState").style.color = "blue";
       }
+      // sunAutoTrack
+      if (statusData.sunAutoTrack) {
+         document.getElementById("autoTrackState").innerHTML = "ON";
+         document.getElementById("autoTrackState").style.color = "blue";
+      } else {
+         document.getElementById("autoTrackState").innerHTML = "OFF";
+         document.getElementById("autoTrackState").style.color = "blue";
+      }
       //timeZone
        document.getElementById("timeZone").innerHTML = ""+statusData.timeZone;
     } else if (this.status == 400) {
@@ -240,6 +251,28 @@ function getCurrentDateAndTime() {
     }
   };
   xhttp.open("GET", "getDateAndTime", true);
+  xhttp.send();
+}
+
+function setCustomDateTimeAdd() {
+   var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      document.getElementById("currentDateTime").innerHTML = this.responseText;
+    }
+  };
+  xhttp.open("GET", "setCustomDateTimeAdd", true);
+  xhttp.send();
+}
+
+function setCustomDateTimeSub() {
+   var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      document.getElementById("currentDateTime").innerHTML = this.responseText;
+    }
+  };
+  xhttp.open("GET", "setCustomDateTimeSub", true);
   xhttp.send();
 }
 
