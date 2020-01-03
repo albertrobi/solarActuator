@@ -87,6 +87,7 @@ volatile unsigned int desiredPosition = 0;
 volatile unsigned int feedBackCountMovePosition = 0;
 volatile unsigned int lastFeedBackCount = 0;
 volatile unsigned int sameFeedBackNr = 0;
+int windSpeed = 0;  // value read from the wind sensor
 
 const int motorDirection = D1;
 const int motor = D2;
@@ -94,9 +95,10 @@ const int keepOnHighD3 = D3;
 const int keepOnHighD4 = D4;
 const int readFeedBackD6 = D6;
 const int magnet = D7;
+const int analogInPin = A0;  // Analog Pin ADC0 = A0
 
 // config static IP
-IPAddress ip(192, 168, 0, 155); // where 155 is the desired IP Address
+IPAddress ip(192, 168, 0, 165); // where 155 is the desired IP Address
 IPAddress gateway(192, 168, 0, 1); // set gateway
 IPAddress subnet(255, 255, 255, 0); // set subnet mask
 
@@ -104,10 +106,26 @@ IPAddress subnet(255, 255, 255, 0); // set subnet mask
 /*************************************************************************/
 /*** Methods WEB AND MOTOR ***********************************************/
 /*************************************************************************/
-void getFeedBack() {
-  String feedBackValue = String(feedBackCount);
+void getSensorData() {
+  String totpKey = server.arg("TOTPKEY");
+  if (isTokenValid(totpKey)) {
+    StaticJsonBuffer<300> JSONbuffer;
+    JsonObject& JSONencoder = JSONbuffer.createObject();
+    JSONencoder["feedBackValue"] = feedBackCount;
+    windSpeed = analogRead(analogInPin);
+    // print the readings in the Serial Monitor
+    Serial.println("Wind Speed = " + windSpeed);
+ 
+    JSONencoder["windSpeed"] = windSpeed;
+    String json;
+    JSONencoder.prettyPrintTo(json);
+  
+    server.send(200, "text/json", json);
+    
+  }
+  //String feedBackValue = String(feedBackCount);
   //  Serial.println("FeedBack Response Count: " + feedBackValue);
-  server.send(200, "text/plane", feedBackValue); //Send FeddABack value only to client ajax request
+  //server.send(200, "text/plane", feedBackValue); //Send FeddABack value only to client ajax request
 }
 
 void resetFeedBackCounter() {
@@ -468,7 +486,7 @@ void initSolarTracking () {
     sameFeedBackNr = 0;
     lastFeedBackCount = feedBackCount;
     //move panel to starting position, rotate max left (city)
-    handleMagnetDeactivate();
+    //handleMagnetDeactivate();
     turnRight = 0;
     Serial.println("Motor Left");
     digitalWrite ( motorDirection, LOW );
@@ -595,6 +613,7 @@ void calcSunPositionAndRotate() {
     } else if (digitalRead(motor) != HIGH) {
       stopSunAutoTrack();
     } else {
+      handleMagnetDeactivate();
       Serial.println("Motor HIGH in calcSunPositionAndRotate ");
     }
   } else {
@@ -836,7 +855,7 @@ void setup(void) {
   server.on("/", handleRoot);      //Which routine to handle at root location. This is display page
   server.onNotFound(handleNotFound);
   server.on("/autoSunTrack", startAutoSunTrack);
-  server.on("/readFeedBack", getFeedBack);
+  server.on("/getSensorData", getSensorData);
   server.on("/motorStart", handleMotorStart);
   server.on("/motorStop", handleMotorStop);
   server.on("/motorTurnRight", handleMotorTurnRight);
@@ -885,7 +904,7 @@ void setup(void) {
 }
 
 void loop(void) {
-
+  
   /*************************************************************************/
   /*** OTA Setup ***********************************************************/
   /*************************************************************************/

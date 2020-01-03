@@ -36,6 +36,9 @@ const char MAIN_page[] PROGMEM = R"=====(
   Motor Feedback Value is : <span id="feedBackValue">0</span>
   <button type="button" onclick="resetFeedBackCounter()">Reset Feedback counter</button>
 <div>
+<div>
+  Wind speed value is : <span id="windSpeedValue">0</span>
+<div>
 
 <div>
 <h1>Motor Turning Direction : <span id="motorTurningDirection">Left</span>
@@ -221,25 +224,37 @@ function getStatusData() {
 
   // get some relevant data
   getCurrentDateAndTime(); 
-  getSensorFeedBackData();
+  getSensorData();
   getSunriseAndSunset();
 }
 
 
 setInterval(function() {
   // Call a function repetatively with 2 Second interval
-  getSensorFeedBackData();
+  getSensorData();
   getCurrentDateAndTime();
-}, 20000); //60000mSeconds update rate
+}, 10000); //10 seconds
 
-function getSensorFeedBackData() {
+function getSensorData() {
+  var password =  document.getElementById("password").value; 
   var xhttp = new XMLHttpRequest();
   xhttp.onreadystatechange = function() {
     if (this.readyState == 4 && this.status == 200) {
-      document.getElementById("feedBackValue").innerHTML = this.responseText;
+      var sensorData = JSON.parse(this.responseText);
+      if (sensorData.feedBackValue != null) {
+         document.getElementById("feedBackValue").innerHTML = sensorData.feedBackValue;
+          document.getElementById("feedBackValue").style.color = "blue";
+      }
+      if (sensorData.windSpeed != null) {
+         document.getElementById("windSpeedValue").innerHTML = sensorData.windSpeed;
+         document.getElementById("windSpeedValue").style.color = "blue";
+      }
+    } else {
+      document.getElementById("windSpeedValue").style.color = "red";
+      document.getElementById("feedBackValue").style.color = "red";
     }
-  };
-  xhttp.open("GET", "readFeedBack", true);
+    };
+  xhttp.open("GET", "getSensorData?TOTPKEY="+password, true);
   xhttp.send();
 }
 
