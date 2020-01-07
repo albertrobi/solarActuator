@@ -37,7 +37,10 @@ const char MAIN_page[] PROGMEM = R"=====(
   <button type="button" onclick="resetFeedBackCounter()">Reset Feedback counter</button>
 <div>
 <div>
-  Wind speed value is : <span id="windSpeedValue">0</span>
+  Wind speed value is : <span id="windSpeedValue">0</span>  Wind guard : <span id="windGuardValue"></span>  <button type="button" onclick="handleWindGuard()">ON/OFF</button>
+<div>
+<div>
+  Panel is at secure position : <span id="panelAtSecurePositionValue"></span>
 <div>
 
 <div>
@@ -177,13 +180,43 @@ function resetFeedBackCounter () {
   xhttp.send();
 }
 
+function handleWindGuard () {
+  var password =  document.getElementById("password").value;
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {
+    if (this.readyState == 4 && this.status == 200) {
+      document.getElementById("windGuardValue").innerHTML = this.responseText;
+      document.getElementById("windGuardValue").style.color = "blue";
+    } else if (this.status == 400) {
+       document.getElementById("windGuardValue").style.color = "red";
+    }
+  };
+  xhttp.open("GET", "handleWindGuard?TOTPKEY="+password, true);
+  xhttp.send();
+}
+
 function getStatusData() {
   var password =  document.getElementById("password").value; 
   var xhttp = new XMLHttpRequest();
   xhttp.onreadystatechange = function() {
     if (this.readyState == 4 && this.status == 200) {
-      var statusData = JSON.parse(this.responseText);
-      if (statusData.motorDirection == 1) {
+      showStatusData(JSON.parse(this.responseText));
+    } else if (this.status == 400) {
+      document.getElementById("motorTurningDirection").style.color = "red";
+      document.getElementById("motorState").style.color = "red";
+    }
+  };
+  xhttp.open("GET", "getStatusData?TOTPKEY="+password, true);
+  xhttp.send();
+
+  // get some relevant data
+  getCurrentDateAndTime(); 
+  getSensorData();
+  getSunriseAndSunset();
+}
+
+function showStatusData(statusData) {
+    if (statusData.motorDirection == 1) {
           document.getElementById("motorTurningDirection").innerHTML = "Right"
           document.getElementById("motorTurningDirection").style.color = "blue";
       } else {
@@ -213,19 +246,7 @@ function getStatusData() {
          document.getElementById("autoTrackState").style.color = "blue";
       }
       //timeZone
-       document.getElementById("timeZone").innerHTML = ""+statusData.timeZone;
-    } else if (this.status == 400) {
-      document.getElementById("motorTurningDirection").style.color = "red";
-      document.getElementById("motorState").style.color = "red";
-    }
-  };
-  xhttp.open("GET", "getStatusData?TOTPKEY="+password, true);
-  xhttp.send();
-
-  // get some relevant data
-  getCurrentDateAndTime(); 
-  getSensorData();
-  getSunriseAndSunset();
+       document.getElementById("timeZone").innerHTML = ""+statusData.timeZone; 
 }
 
 
@@ -241,6 +262,7 @@ function getSensorData() {
   xhttp.onreadystatechange = function() {
     if (this.readyState == 4 && this.status == 200) {
       var sensorData = JSON.parse(this.responseText);
+      showStatusData(sensorData);
       if (sensorData.feedBackValue != null) {
          document.getElementById("feedBackValue").innerHTML = sensorData.feedBackValue;
           document.getElementById("feedBackValue").style.color = "blue";
@@ -248,6 +270,14 @@ function getSensorData() {
       if (sensorData.windSpeed != null) {
          document.getElementById("windSpeedValue").innerHTML = sensorData.windSpeed;
          document.getElementById("windSpeedValue").style.color = "blue";
+      }
+      if (sensorData.windGuardOn != null) {
+         document.getElementById("windGuardValue").innerHTML = sensorData.windGuardOn;
+         document.getElementById("windGuardValue").style.color = "blue";
+      }
+       if (sensorData.panelAtSecurePosition != null) {
+         document.getElementById("panelAtSecurePositionValue").innerHTML = sensorData.panelAtSecurePosition;
+         document.getElementById("panelAtSecurePositionValue").style.color = "blue";
       }
     } else {
       document.getElementById("windSpeedValue").style.color = "red";
