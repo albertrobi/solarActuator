@@ -91,6 +91,8 @@ volatile unsigned int feedBackCountMovePosition = 0;
 volatile unsigned int lastFeedBackCount = 0;
 volatile unsigned int sameFeedBackNr = 0;
 int windSpeed = 0;  // value read from the wind sensor
+int photoSensor1 = 0;  // value read from the photo sensor
+int photoSensor2 = 0;  // value read from the photo sensor
 
 const int motorDirection = D1;
 const int motor = D2;
@@ -99,6 +101,8 @@ const int keepOnHighD4 = D4;
 const int readFeedBackD6 = D6;
 const int magnet = D7;
 const int analogInPin = A0;  // Analog Pin ADC0 = A0
+const int analogSelD5 = D5; // selegt which analog source to listen S0
+const int analogSelD8 = D8; // selegt which analog source to listen S1
 
 // config static IP
 IPAddress ip(192, 168, 0, 165); // where 155 is the desired IP Address
@@ -448,13 +452,31 @@ double convertDayLightToSeconds(char* token, char* type) {
 /*** Wind Speed Mesuring Methods  *************************************************************/
 /** Wind speed Module **/ 
 void measureWindSpeed() {
+  digitalWrite ( analogSelD5, HIGH ); //S0
+  digitalWrite ( analogSelD8, HIGH );  //S1
   windSpeed = analogRead(analogInPin);
   Serial.println("* Wind Speed = " + String(windSpeed));
+  measurePhotoSensor1();
+  measurePhotoSensor2();
   if (windSpeed > max_wind_speed && !Alarm.isAllocated(panelToInitialPosAlarm) && isWindGuardOn && !isPanelAtSecurePostion) {
     Serial.println("******* Wind Speed too high moving panel to secure position " + String(windSpeed));
     stopSunAutoTrack();
     movePanelToSecurePosition();
   }
+}
+
+void measurePhotoSensor1() {
+  digitalWrite ( analogSelD5, LOW ); //S0
+  digitalWrite ( analogSelD8, HIGH );  //S1
+  photoSensor1 = analogRead(analogInPin);
+  Serial.println("* Photo sensor = " + String(photoSensor1));
+}
+
+void measurePhotoSensor2() {
+  digitalWrite ( analogSelD5, HIGH ); //S0
+  digitalWrite ( analogSelD8, LOW );  //S1
+  photoSensor2 = analogRead(analogInPin);
+  Serial.println("* Photo sensor = " + String(photoSensor2));
 }
 
 /********************************************************************************************/
@@ -765,12 +787,16 @@ void setup(void) {
   pinMode ( keepOnHighD3, OUTPUT );
   pinMode ( keepOnHighD4, OUTPUT );
   pinMode ( magnet, OUTPUT );
+  pinMode ( analogSelD5, OUTPUT );
+  pinMode ( analogSelD8, OUTPUT );
 
   digitalWrite ( motorDirection, LOW );
   digitalWrite ( motor, LOW );
   digitalWrite ( keepOnHighD3, HIGH );
   digitalWrite ( keepOnHighD4, HIGH );
   digitalWrite ( magnet, LOW );
+  digitalWrite ( analogSelD5, LOW );
+  digitalWrite ( analogSelD8, LOW );
 
   Serial.begin(115200);
   Serial.println("Booting");
