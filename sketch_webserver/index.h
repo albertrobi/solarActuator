@@ -42,6 +42,12 @@ const char MAIN_page[] PROGMEM = R"=====(
 <div>
   Panel is at secure position : <span id="panelAtSecurePositionValue"></span>
 <div>
+<div>
+  Photo sensor value UP: <span id="photoSensor1Value"></span> DOWN: <span id="photoSensor2Value"></span>
+<div>
+<div>
+  Humidity: <span id="humidityValue"></span> Temperature: <span id="temperatureValue"></span>
+<div>
 
 <div>
 <h1>Motor Turning Direction : <span id="motorTurningDirection">Left</span>
@@ -279,9 +285,31 @@ function getSensorData() {
          document.getElementById("panelAtSecurePositionValue").innerHTML = sensorData.panelAtSecurePosition;
          document.getElementById("panelAtSecurePositionValue").style.color = "blue";
       }
+       if (sensorData.photoSensor1 != null) {
+         document.getElementById("photoSensor1Value").innerHTML = sensorData.photoSensor1;
+         document.getElementById("photoSensor1Value").style.color = "blue";
+      }
+      if (sensorData.photoSensor2 != null) {
+         document.getElementById("photoSensor2Value").innerHTML = sensorData.photoSensor2;
+         document.getElementById("photoSensor2Value").style.color = "blue";
+      }
+       if (sensorData.temperature != null) {
+         document.getElementById("temperatureValue").innerHTML = sensorData.temperature;
+         document.getElementById("temperatureValue").style.color = "blue";
+      }
+      if (sensorData.humidity != null) {
+         document.getElementById("humidityValue").innerHTML = sensorData.humidity;
+         document.getElementById("humidityValue").style.color = "blue";
+      }
     } else {
       document.getElementById("windSpeedValue").style.color = "red";
       document.getElementById("feedBackValue").style.color = "red";
+      document.getElementById("photoSensor1Value").style.color = "red";
+      document.getElementById("photoSensor2Value").style.color = "red";
+      document.getElementById("temperatureValue").style.color = "red";
+      document.getElementById("humidityValue").style.color = "red";
+      document.getElementById("panelAtSecurePositionValue").style.color = "red";
+      document.getElementById("windGuardValue").style.color = "red";
     }
     };
   xhttp.open("GET", "getSensorData?TOTPKEY="+password, true);
