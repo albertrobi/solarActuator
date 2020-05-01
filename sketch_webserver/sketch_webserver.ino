@@ -88,7 +88,7 @@ bool isPanelAtSecurePostion = false;
 int turnRight = 0;
 String motorTurningDirection = "Right"; //MAX 572 turns - error 14
 volatile unsigned int maxRotation = 572;
-const unsigned int max_wind_speed = 50; // max wind speed supported
+const unsigned int max_wind_speed = 150; // max wind speed supported
 int windSpeedHighCount = 0;
 
 volatile unsigned int feedBackCount = 0;
