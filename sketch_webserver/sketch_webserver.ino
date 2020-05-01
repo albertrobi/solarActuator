@@ -28,7 +28,7 @@ DHT dht(DHTPIN, DHTTYPE);
 //variables for time
 int timezone = 0; // 2*3600;
 int dst = 0; //day light saving
-int romaniaTimeZone = 2; // UTC +2 romania timezont
+int romaniaTimeZone = 3; // UTC +2 romania timezont
 time_t ntp_time = 0;
 
 // sunrize/sunset/daylightSeconds
@@ -89,6 +89,7 @@ int turnRight = 0;
 String motorTurningDirection = "Right"; //MAX 572 turns - error 14
 volatile unsigned int maxRotation = 572;
 const unsigned int max_wind_speed = 50; // max wind speed supported
+int windSpeedHighCount = 0;
 
 volatile unsigned int feedBackCount = 0;
 volatile unsigned int desiredPosition = 0;
@@ -470,10 +471,18 @@ void measureWindSpeed() {
   measurePhotoSensor1();
   measurePhotoSensor2();
   measureTemperature();
-  if (windSpeed > max_wind_speed && !Alarm.isAllocated(panelToInitialPosAlarm) && isWindGuardOn && !isPanelAtSecurePostion) {
-    Serial.println("******* Wind Speed too high moving panel to secure position " + String(windSpeed));
-    stopSunAutoTrack();
-    movePanelToSecurePosition();
+  if (windSpeed > max_wind_speed) {
+    windSpeedHighCount++;
+    // move panel to initial position only if wind continues to blow high at least 10 seconds each count is 2 seconds
+    if (windSpeedHighCount == 5) && !Alarm.isAllocated(panelToInitialPosAlarm) && isWindGuardOn && !isPanelAtSecurePostion) {
+       Serial.println("******* Wind Speed too high moving panel to secure position " + String(windSpeed));
+      stopSunAutoTrack();
+      movePanelToSecurePosition();
+    }
+  } else {
+    windSpeedHighCount = 0;
+  }
+   
   }
 }
 

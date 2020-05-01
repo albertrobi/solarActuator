@@ -1,0 +1,26 @@
+NODE MCU:
+
+D0 -> S0 (Analog Multiplexer selector)
+D1 -> Motor Direction
+D2 -> Motor Start/Stop
+D3 -> Keep on High ? -------
+D4 -> Keep on high ? -------
+D5 -> DHT input (Temprature and Humidity)
+D6 -> Motor feedback sensor
+D7 -> Magnet ON/OFF
+D8 -> s1 (Analog multiplexer board)
+A0 -> SIG (Analog multiplexer board) input wind speed / photo sensor 1 / photo sensor 2 
+
+Analog Multiplexer board
+
+SIG -> signal output
+Selectors:
+S0 -> D0
+S1 -> D8
+S2 -> GND
+S3 -> GND
+
+Chanels
+C1 -> Photo sensor 1
+C2 -> Photo sensor 2
+C3 -> Wind speed sensor
