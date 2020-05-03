@@ -113,7 +113,7 @@ const int analogSelD0 = D0; // selegt which analog source to listen S0
 const int analogSelD8 = D8; // selegt which analog source to listen S1
 
 // config static IP
-IPAddress ip(192, 168, 0, 165); // where 155 is the desired IP Address
+IPAddress ip(192, 168, 0, 155); // where 155 is the desired IP Address
 IPAddress gateway(192, 168, 0, 1); // set gateway
 IPAddress subnet(255, 255, 255, 0); // set subnet mask
 
@@ -474,15 +474,13 @@ void measureWindSpeed() {
   if (windSpeed > max_wind_speed) {
     windSpeedHighCount++;
     // move panel to initial position only if wind continues to blow high at least 10 seconds each count is 2 seconds
-    if (windSpeedHighCount == 5) && !Alarm.isAllocated(panelToInitialPosAlarm) && isWindGuardOn && !isPanelAtSecurePostion) {
+    if (windSpeedHighCount == 5 && !Alarm.isAllocated(panelToInitialPosAlarm) && isWindGuardOn && !isPanelAtSecurePostion) {
        Serial.println("******* Wind Speed too high moving panel to secure position " + String(windSpeed));
       stopSunAutoTrack();
       movePanelToSecurePosition();
     }
   } else {
     windSpeedHighCount = 0;
-  }
-   
   }
 }
 
