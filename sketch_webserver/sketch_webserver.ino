@@ -823,7 +823,7 @@ void setup(void) {
   digitalWrite ( motor, LOW );
   digitalWrite ( keepOnHighD3, HIGH );
   digitalWrite ( keepOnHighD4, HIGH );
-  digitalWrite ( magnet, LOW );
+  digitalWrite ( magnet, HIGH );
   digitalWrite ( analogSelD0, LOW );
   digitalWrite ( analogSelD8, LOW );
 
