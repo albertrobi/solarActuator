@@ -1,4 +1,4 @@
-NODE MCU:
+1) NODE MCU:
 
 D0 -> S0 (Analog Multiplexer selector)
 D1 -> Motor Direction
@@ -11,9 +11,12 @@ D7 -> Magnet ON/OFF
 D8 -> s1 (Analog multiplexer board)
 A0 -> SIG (Analog multiplexer board) input wind speed / photo sensor 1 / photo sensor 2 
 
-Analog Multiplexer board
+2) Analog Multiplexer board
 
 SIG -> signal output
+VCC -> 3V
+GND
+
 Selectors:
 S0 -> D0
 S1 -> D8
@@ -24,3 +27,45 @@ Chanels
 C1 -> Photo sensor 1
 C2 -> Photo sensor 2
 C3 -> Wind speed sensor
+
+3) Wind sensorbox:
+
+InPUT WIND SENSOR:
+GRAY - Ground
+Red - Signal
+OUTPUT :
+GRAY -> Ground
+RED -> Analog Signal -> C3
+
+4) Light sensor box:
+
+RED    -> +3V
+Blue   -> GND
+Orange -> D3 - DHT input (Temprature and Humidity)  
+Gray   -> C1 Analog Multiplexer Photo sensor1 
+Green  -> C2 analog Multiplexer Phot sensor 2 
+
+5) 5V Regulator L7805
+MIddle -> Ground
+Right -> 5V exit 
+Left -> 12V input
+
+6) Motor driver 
+DIR (5V) ->  HV3 (Level Converter) -> D1 (3V NodeMcu)
+PWWM (5V) -> HV4 (Level Converter) -> D2 (3V NodeMcu)
+
+7) Level Converter
+HV1 -> Magnet Driver PW2
+LV1 -> D7 (3V NodeMcu) Magnet ON/OFF
+HV3 -> DIR (5V Motor Driver)
+LV3 -> D1 (3V NodeMcu) Motor Direction
+HV4 -> PWM (5V Motor Driver)
+LV4 -> D2 (3V NodeMcu) Motor Start/Stop
+GND 
+HV -> 5V
+LV -> 3V
+
+8) Magnet Driver
+VCC -> 5V
+GND
+PWM2 -> HV1

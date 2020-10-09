@@ -113,7 +113,7 @@ const int analogSelD0 = D0; // selegt which analog source to listen S0
 const int analogSelD8 = D8; // selegt which analog source to listen S1
 
 // config static IP
-IPAddress ip(192, 168, 0, 155); // where 155 is the desired IP Address
+IPAddress ip(192, 168, 50, 5); // where 155 is the desired IP Address
 IPAddress gateway(192, 168, 0, 1); // set gateway
 IPAddress subnet(255, 255, 255, 0); // set subnet mask
 
