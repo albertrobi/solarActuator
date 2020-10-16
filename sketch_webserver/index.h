@@ -48,6 +48,9 @@ const char MAIN_page[] PROGMEM = R"=====(
 <div>
   Humidity: <span id="humidityValue"></span> Temperature: <span id="temperatureValue"></span>
 <div>
+<div>
+  Magnet Connection Active: <span id="magnetFeedback"></span>
+<div>
 
 <div>
 <h1>Motor Turning Direction : <span id="motorTurningDirection">Left</span>
@@ -60,7 +63,7 @@ const char MAIN_page[] PROGMEM = R"=====(
 	<button type="button" onclick="sendMotorStop()">Motor Stop</button><BR>
 <div>
 <div>
-  Magnet State :  <span id="magnetState">Actived</span>
+  Magnet State :  <span id="magnetState">Active</span>
   <button type="button" onclick="sendMagnetActivate()">Magnet Activate</button>
   <button type="button" onclick="sendMagnetDeactivate()">Magnet Deactivate</button><BR>
 <div>
@@ -301,12 +304,17 @@ function getSensorData() {
          document.getElementById("humidityValue").innerHTML = sensorData.humidity;
          document.getElementById("humidityValue").style.color = "blue";
       }
+      if (sensorData.magnetFeedback != null) {
+         document.getElementById("magnetFeedback").innerHTML = sensorData.magnetFeedback;
+         document.getElementById("magnetFeedback").style.color = "blue";
+      }
     } else {
       document.getElementById("windSpeedValue").style.color = "red";
       document.getElementById("feedBackValue").style.color = "red";
       document.getElementById("photoSensor1Value").style.color = "red";
       document.getElementById("photoSensor2Value").style.color = "red";
       document.getElementById("temperatureValue").style.color = "red";
+      document.getElementById("magnetFeedback").style.color = "red";
       document.getElementById("humidityValue").style.color = "red";
       document.getElementById("panelAtSecurePositionValue").style.color = "red";
       document.getElementById("windGuardValue").style.color = "red";
